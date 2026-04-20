@@ -128,16 +128,31 @@ a { color: inherit; text-decoration: none; }
 .nav-cta::after { display: none; }
 @media (max-width: 720px) { .brand-tag { display: none; } .nav-links { gap: 1rem; } }
 
-/* HERO */
+/* HERO — DNA lives on the right, text on the left so nothing blocks reading */
 .hero {
   position: relative; min-height: 100vh;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center;
   overflow: hidden;
-  background: radial-gradient(ellipse at center, var(--bg-2) 0%, var(--bg-0) 80%);
+  background: radial-gradient(ellipse at 75% 50%, var(--bg-2) 0%, var(--bg-0) 70%);
 }
-.hero-backdrop { position: absolute; inset: 0; z-index: 0; }
+.hero-backdrop {
+  position: absolute; top: -6vh; right: -6vw; bottom: -6vh;
+  width: 62%; z-index: 0; pointer-events: none;
+  transform-origin: center right;
+  will-change: transform, opacity;
+  mask-image: radial-gradient(ellipse at center, #000 55%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 55%, transparent 85%);
+}
 #three-dna { width: 100%; height: 100%; display: block; }
-.hero-content { position: relative; z-index: 2; text-align: center; padding: 0 2rem; }
+.hero-content {
+  position: relative; z-index: 2; text-align: left;
+  max-width: 620px; padding: 0 2rem 0 6rem; margin-right: auto;
+}
+@media (max-width: 900px) {
+  .hero { justify-content: center; text-align: center; }
+  .hero-backdrop { width: 100%; right: 0; opacity: 0.28; }
+  .hero-content { padding: 0 2rem; text-align: center; margin: 0 auto; max-width: 720px; }
+}
 .hero-kicker {
   font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 6px;
   color: var(--accent); margin-bottom: 1.5rem;
@@ -146,8 +161,9 @@ a { color: inherit; text-decoration: none; }
 .hero-title {
   font-family: var(--f-display); font-size: clamp(1.6rem, 5vw, 3.4rem);
   letter-spacing: 6px; margin-bottom: 2rem;
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6em;
+  display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 0.6em;
 }
+@media (max-width: 900px) { .hero-title { justify-content: center; } .hero-cta { justify-content: center; } }
 .title-word {
   display: inline-block; opacity: 0; transform: translateY(40px);
   animation: title-in 0.8s ease forwards;
@@ -163,12 +179,12 @@ a { color: inherit; text-decoration: none; }
   100% { opacity: 1; transform: translateY(0) rotateX(0); }
 }
 .hero-subtitle {
-  max-width: 640px; margin: 0 auto 3rem; font-size: 1.15rem; color: var(--ink-dim);
+  max-width: 640px; margin: 0 0 3rem 0; font-size: 1.15rem; color: var(--ink-dim);
   opacity: 0; transform: translateY(20px); animation: fade-up 1s ease 1.4s forwards;
 }
 @keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 .hero-cta {
-  display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap;
+  display: flex; gap: 1.2rem; justify-content: flex-start; flex-wrap: wrap;
   opacity: 0; transform: translateY(20px); animation: fade-up 1s ease 1.7s forwards;
 }
 .scroll-hint {
@@ -180,25 +196,29 @@ a { color: inherit; text-decoration: none; }
 .scroll-hint span { display: block; width: 2px; height: 40px; background: linear-gradient(to bottom, transparent, var(--accent)); animation: scroll-line 1.8s ease-in-out infinite; }
 @keyframes scroll-line { 0%,100% { transform: scaleY(0.3); opacity: 0.3; } 50% { transform: scaleY(1); opacity: 1; } }
 
-/* BUTTONS */
+/* BUTTONS — fill uses an explicit --btn-fill var so hover text stays readable */
 .btn {
+  --btn-fill: var(--ink);
+  --btn-text: var(--ink);
+  --btn-text-hover: var(--bg-0);
   display: inline-block; font-family: var(--f-display); font-size: 0.7rem;
-  letter-spacing: 3px; padding: 1rem 2rem; border: 2px solid currentColor;
-  border-radius: 4px; cursor: pointer; background: transparent; color: var(--ink);
-  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+  letter-spacing: 3px; padding: 1rem 2rem; border: 2px solid var(--btn-fill);
+  border-radius: 4px; cursor: pointer; background: transparent; color: var(--btn-text);
+  transition: color 0.25s ease, transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.25s ease;
   text-decoration: none; position: relative; overflow: hidden;
+  z-index: 0;
 }
 .btn::before {
   content: ''; position: absolute; top: 0; left: -100%;
-  width: 100%; height: 100%; background: currentColor;
+  width: 100%; height: 100%; background: var(--btn-fill);
   transition: left 0.4s ease; z-index: -1;
 }
 .btn:hover::before { left: 0; }
-.btn:hover { color: var(--bg-0); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,255,255,0.1); }
-.btn-primary { color: var(--c-u); }
-.btn-primary:hover { color: var(--bg-0); box-shadow: 0 10px 30px var(--c-u); }
-.btn-ghost { color: var(--accent); }
-.btn-ghost:hover { color: var(--bg-0); box-shadow: 0 10px 30px var(--accent); }
+.btn:hover { color: var(--btn-text-hover); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,255,255,0.15); }
+.btn-primary { --btn-fill: var(--c-u); --btn-text: #fff; --btn-text-hover: #fff; }
+.btn-primary:hover { box-shadow: 0 10px 30px var(--c-u); }
+.btn-ghost { --btn-fill: var(--accent); --btn-text: var(--accent); --btn-text-hover: var(--bg-0); }
+.btn-ghost:hover { box-shadow: 0 10px 30px var(--accent); }
 .btn-big { padding: 1.3rem 2.6rem; font-size: 0.8rem; }
 .btn-small { padding: 0.6rem 1rem; font-size: 0.5rem; }
 
@@ -476,11 +496,12 @@ a { color: inherit; text-decoration: none; }
     </div>
   </a>
   <ul class="nav-links">
-    <li><a href="#intro" class="nav-link">About</a></li>
-    <li><a href="#dna" class="nav-link">DNA</a></li>
-    <li><a href="#transcription" class="nav-link">RNA</a></li>
-    <li><a href="#translation" class="nav-link">Protein</a></li>
-    <li><a href="#mutations" class="nav-link">Mutations</a></li>
+    <li><a href="#why" class="nav-link">Why</a></li>
+    <li><a href="#dna" class="nav-link">L1</a></li>
+    <li><a href="#transcription" class="nav-link">L2</a></li>
+    <li><a href="#maze" class="nav-link">L3</a></li>
+    <li><a href="#translation" class="nav-link">L4</a></li>
+    <li><a href="#mutations" class="nav-link">Die</a></li>
     <li><a href="#play" class="nav-link nav-cta">Play</a></li>
   </ul>
 </nav>
@@ -499,10 +520,10 @@ a { color: inherit; text-decoration: none; }
       <span class="title-word" data-text="OF">OF</span>
       <span class="title-word" data-text="LIFE">LIFE</span>
     </h1>
-    <p class="hero-subtitle">A four-level educational game that walks you through DNA building, transcription, mRNA transport, and translation — the entire central dogma of molecular biology.</p>
+    <p class="hero-subtitle">A four-level pixel-art biology game. Build DNA, fire RNA polymerase, race a mRNA through a maze of hungry enzymes, and decode proteins one codon at a time — all with a unified Cell Health bar that makes every mistake count.</p>
     <div class="hero-cta">
-      <a href="#intro" class="btn btn-primary">BEGIN JOURNEY</a>
-      <a href="#play" class="btn btn-ghost">PLAY THE GAME</a>
+      <a href="#play" class="btn btn-primary">PLAY NOW</a>
+      <a href="#why" class="btn btn-ghost">WHY YOU'LL LOVE IT</a>
     </div>
     <div class="scroll-hint"><span></span>SCROLL</div>
   </div>
@@ -513,28 +534,28 @@ a { color: inherit; text-decoration: none; }
   <div class="container">
     <div class="stats-grid">
       <div class="stat reveal">
-        <div class="stat-num" data-count="3200000000">0</div>
-        <div class="stat-label">Base pairs in the human genome</div>
+        <div class="stat-num" data-count="4">0</div>
+        <div class="stat-label">Playable levels — DNA, RNA polymerase, mRNA maze, ribosome</div>
       </div>
       <div class="stat reveal">
-        <div class="stat-num" data-count="2">0</div><div class="stat-unit">m</div>
-        <div class="stat-label">DNA coiled inside a single cell nucleus</div>
+        <div class="stat-num" data-count="5">0</div>
+        <div class="stat-label">Colors that link every letter to its nucleotide</div>
       </div>
       <div class="stat reveal">
-        <div class="stat-num" data-count="20">0</div>
-        <div class="stat-label">Standard amino acids that build every protein</div>
+        <div class="stat-num" data-count="12">0</div>
+        <div class="stat-label">Hand-crafted sound effects &amp; level themes</div>
       </div>
       <div class="stat reveal">
         <div class="stat-num" data-count="64">0</div>
-        <div class="stat-label">Possible codons in the genetic code (4³)</div>
+        <div class="stat-label">Codons you might face in Level 4 translation</div>
       </div>
       <div class="stat reveal">
-        <div class="stat-num" data-count="99">0</div><div class="stat-unit">.9%</div>
-        <div class="stat-label">DNA identical between any two humans</div>
+        <div class="stat-num" data-count="1">0</div>
+        <div class="stat-label">Shared Cell Health bar — one chain, one life</div>
       </div>
       <div class="stat reveal">
-        <div class="stat-num" data-count="37">0</div><div class="stat-unit">T</div>
-        <div class="stat-label">Cells in the average human body (trillions)</div>
+        <div class="stat-num" data-count="0">0</div>
+        <div class="stat-label">Cost — free, browser-based, no account, runs on MakeCode</div>
       </div>
     </div>
   </div>
@@ -543,16 +564,17 @@ a { color: inherit; text-decoration: none; }
 <!-- LETTER GRID -->
 <section class="letter-grid-section" id="grid-section">
   <div class="container">
-    <span class="section-kicker reveal">THE ALPHABET</span>
-    <h2 class="section-title reveal">Four letters. One color each. Hover any tile.</h2>
+    <span class="section-kicker reveal">THE PIXEL PALETTE</span>
+    <h2 class="section-title reveal">Every letter has a color. Every color has a sound. Hover to hear.</h2>
     <div class="letter-grid" id="letter-grid"></div>
     <div class="legend reveal">
-      <div class="legend-item"><span class="swatch swatch-A"></span>Adenine (A) — pairs with T (two H-bonds)</div>
-      <div class="legend-item"><span class="swatch swatch-T"></span>Thymine (T) — pairs with A</div>
-      <div class="legend-item"><span class="swatch swatch-C"></span>Cytosine (C) — pairs with G (three H-bonds)</div>
-      <div class="legend-item"><span class="swatch swatch-G"></span>Guanine (G) — pairs with C</div>
-      <div class="legend-item"><span class="swatch swatch-U"></span>Uracil (U) — replaces T in RNA</div>
+      <div class="legend-item"><span class="swatch swatch-A"></span>A — red · triangle tone</div>
+      <div class="legend-item"><span class="swatch swatch-T"></span>T — blue · lower tone</div>
+      <div class="legend-item"><span class="swatch swatch-C"></span>C — green · mid tone</div>
+      <div class="legend-item"><span class="swatch swatch-G"></span>G — yellow · higher tone</div>
+      <div class="legend-item"><span class="swatch swatch-U"></span>U — purple · RNA chime</div>
     </div>
+    <p class="caption reveal" style="margin-top: 2rem;">The same color-sound pairing shows up in-game — so you'll <em>feel</em> when a base pair is wrong before you even read it.</p>
   </div>
 </section>
 
@@ -560,38 +582,39 @@ a { color: inherit; text-decoration: none; }
 <section class="section-pinned" id="pinned">
   <div class="pinned-track">
     <div class="pinned-panel pinned-1"><div class="pinned-inner">
-      <div class="pinned-kicker">STEP 01</div>
-      <h2>REPLICATION</h2>
-      <p>Before a cell divides, every strand of DNA is unzipped by helicase and copied — letter for letter — into two identical helices by DNA polymerase. Errors are under 1 in 10 million.</p>
+      <div class="pinned-kicker">LEVEL 01 · PUZZLE</div>
+      <h2>BUILD THE HELIX</h2>
+      <p>Drag-place the right base against a template strand. Three wrong pairs and the whole DNA collapses — your cell takes a massive hit. Correct pairs snap into place with a hydrogen-bond animation and a chime.</p>
     </div></div>
     <div class="pinned-panel pinned-2"><div class="pinned-inner">
-      <div class="pinned-kicker">STEP 02</div>
-      <h2>TRANSCRIPTION</h2>
-      <p>RNA polymerase binds to a promoter, opens the helix, and transcribes one strand into messenger RNA at about 40 nucleotides per second.</p>
+      <div class="pinned-kicker">LEVEL 02 · TIMING</div>
+      <h2>LAND THE POLYMERASE</h2>
+      <p>A fast-moving droplet bounces across the screen. Tap A the moment it crosses the glowing promoter zone. Miss too often and transcription shuts down. Each hit speeds the droplet up — pressure compounds.</p>
     </div></div>
     <div class="pinned-panel pinned-3"><div class="pinned-inner">
-      <div class="pinned-kicker">STEP 03</div>
-      <h2>TRANSPORT</h2>
-      <p>After splicing, capping, and polyadenylation, the mRNA leaves the nucleus through a nuclear pore and travels to a ribosome in the cytoplasm.</p>
+      <div class="pinned-kicker">LEVEL 03 · ACTION</div>
+      <h2>RUN THE MAZE</h2>
+      <p>Steer the mRNA from the nucleus to a waiting ribosome. Dodge RNase enzymes that chew you up on contact. Grab ATP energy packets. Beat the degradation timer before the message falls apart.</p>
     </div></div>
     <div class="pinned-panel pinned-4"><div class="pinned-inner">
-      <div class="pinned-kicker">STEP 04</div>
-      <h2>TRANSLATION</h2>
-      <p>The ribosome reads the mRNA in groups of three — codons — and links amino acids into a polypeptide that folds into a finished protein.</p>
+      <div class="pinned-kicker">LEVEL 04 · FOCUS</div>
+      <h2>DECODE THE PROTEIN</h2>
+      <p>One codon at a time, three options per round. Pick the right amino acid or watch your protein misfold. Get a perfect run and you synthesize a working protein — complete with a confetti finale.</p>
     </div></div>
   </div>
 </section>
 
-<!-- INTRO / CENTRAL DOGMA -->
-<section class="section section-intro" id="intro">
+<!-- WHY YOU SHOULD PLAY -->
+<section class="section section-intro" id="why">
   <div class="container">
     <div class="split">
       <div class="split-text reveal">
-        <span class="section-kicker">01 · THE CENTRAL DOGMA</span>
-        <h2 class="section-heading">Information <em>flows</em> from DNA to RNA to Protein.</h2>
-        <p>First proposed by Francis Crick in 1958, the central dogma is the master blueprint every living cell follows. DNA is the archive — a stable, two-strand library of instructions. RNA is the messenger — a disposable, single-strand copy. Protein is the machine — the shape-shifter that does almost every job in the cell.</p>
-        <p>Each step is catalyzed by specialized enzymes. Each step has quality control. Each step can fail — and when it does, the cell has repair systems to clean up the mess. In this game, you operate every stage of the pipeline yourself.</p>
-        <p><strong>Fun fact:</strong> A single cell does enough transcription every minute to build a library equal to the works of Shakespeare.</p>
+        <span class="section-kicker">01 · WHY YOU'LL LOVE IT</span>
+        <h2 class="section-heading">Four <em>tight</em> mini-games. One living cell to keep alive.</h2>
+        <p>Most biology explainers are read-only. This one isn't. Every mechanic in the game is a biological process you're physically operating — fire the polymerase, dodge the RNase, pick the amino acid — and every mistake shows up as damage on a shared Cell Health bar.</p>
+        <p><strong>Ludicrous animations.</strong> Hydrogen bonds zip closed on correct pairs. The helix glitches red on mistakes. Enzymes wobble. ATP packets spin. A death melody plays if your cell flatlines. A win melody plays if you make it to the protein.</p>
+        <p><strong>Chiptune soundtrack.</strong> Every level has its own theme, built note-by-note in MakeCode. Every action has a cue — place a base, land a polymerase, grab energy, take damage. You can learn the rhythm of the cell.</p>
+        <p><strong>Runs in a browser.</strong> Free, no account, no install. Open MakeCode Arcade, paste the Python file, hit play.</p>
       </div>
       <div class="dogma-flow reveal">
         <div class="dogma-node dogma-dna"><span>DNA</span></div>
@@ -604,31 +627,31 @@ a { color: inherit; text-decoration: none; }
   </div>
 </section>
 
-<!-- DNA -->
+<!-- LEVEL 1 PROMO -->
 <section class="section section-dna" id="dna">
   <div class="parallax-bg"></div>
   <div class="container">
     <span class="section-kicker reveal">02 · LEVEL 1 — DNA BUILDING</span>
-    <h2 class="section-heading reveal">Two strands. One zipper of hydrogen bonds.</h2>
+    <h2 class="section-heading reveal">Snap the helix together, one base at a time.</h2>
     <div class="split">
       <div class="split-text reveal">
-        <p>DNA is a double helix. Each rung of the ladder is a pair of bases held together by hydrogen bonds: <strong>A</strong> pairs with <strong>T</strong> using two hydrogen bonds, and <strong>C</strong> pairs with <strong>G</strong> using three. That extra bond makes C-G pairs stronger — regions of DNA rich in C and G are harder to unzip.</p>
-        <p>The two strands run <em>antiparallel</em>: one goes 5' to 3', the other 3' to 5'. The sugar-phosphate backbone wraps around the outside while the bases face inward, hidden from water. One full twist of the helix is about 10.5 base pairs.</p>
-        <p>In Level 1, a template strand appears on the left. Your job: place the complementary base on the right. Three mutations and the strand collapses — your cell takes damage.</p>
+        <p><strong>What you do:</strong> a template strand scrolls down the left side of the screen. Joystick your cursor up and down, cycle through A / T / C / G with the A button, and slam the correct complement into place with B.</p>
+        <p><strong>Why it's fun:</strong> correct pairs snap in with a glowing hydrogen-bond animation and a two-note chime. Wrong pairs shake the screen, flash red, and chip away at your Cell Health bar.</p>
+        <p><strong>What you'll pick up along the way:</strong> A pairs with T. C pairs with G. Three mistakes and you trigger a full DNA damage event.</p>
         <div class="pair-rule">
           <div class="pair-rule-row"><span class="pill pill-A">A</span>—<span class="pill pill-T">T</span></div>
           <div class="pair-rule-row"><span class="pill pill-C">C</span>—<span class="pill pill-G">G</span></div>
         </div>
         <ul class="fact-list">
-          <li><span class="fact-num">3.2B</span> base pairs in the human genome</li>
-          <li><span class="fact-num">2m</span> of DNA coiled inside each cell</li>
-          <li><span class="fact-num">46</span> chromosomes in every human cell</li>
-          <li><span class="fact-num">10.5</span> base pairs per turn of the helix</li>
+          <li><span class="fact-num">6</span> base pairs per round — short, sharp, satisfying</li>
+          <li><span class="fact-num">3</span> mutations allowed before the strand collapses</li>
+          <li><span class="fact-num">+10</span> Cell Health restored for a clean build</li>
+          <li><span class="fact-num">0</span> tutorials required — controls shown on-screen</li>
         </ul>
       </div>
       <div class="dna-demo reveal">
         <div class="helix-demo" id="helix-demo"></div>
-        <p class="caption">Hover any rung — the hydrogen bond glows.</p>
+        <p class="caption">Preview: each rung pulses as you scroll — that's the hydrogen-bond animation from the game.</p>
       </div>
     </div>
   </div>
@@ -638,7 +661,7 @@ a { color: inherit; text-decoration: none; }
 <section class="section section-transcription" id="transcription">
   <div class="container">
     <span class="section-kicker reveal">03 · LEVEL 2 — TRANSCRIPTION</span>
-    <h2 class="section-heading reveal">Copy the code into a portable message.</h2>
+    <h2 class="section-heading reveal">Drop the polymerase. Split the helix. Feel the tempo rise.</h2>
     <div class="split reverse">
       <div class="poly-demo reveal">
         <div class="poly-track">
@@ -649,10 +672,10 @@ a { color: inherit; text-decoration: none; }
         <p class="caption">Click anywhere in the track when the droplet is over the promoter.</p>
       </div>
       <div class="split-text reveal">
-        <p>DNA never leaves the nucleus — it's too precious to risk. Instead, an enzyme called <strong>RNA polymerase</strong> binds a sequence called the <em>promoter</em>, unzips the double helix, and reads one strand letter by letter, building a complementary strand of <strong>messenger RNA</strong>.</p>
-        <p>RNA differs from DNA in three ways: it is single-stranded, it uses the sugar ribose instead of deoxyribose, and it uses uracil (U) instead of thymine (T). Otherwise the pairing rules are the same — A to U, C to G.</p>
-        <p>In eukaryotes the raw transcript (pre-mRNA) is then modified: a 5' cap is added for stability, introns are spliced out, and a poly-A tail of 200+ adenines is attached to the 3' end. Only then is the mRNA export-ready.</p>
-        <p>In Level 2, the polymerase droplet bounces across the screen. Land it on the promoter three times to finish transcription. Miss too often and the cell shuts transcription down.</p>
+        <p><strong>What you do:</strong> a purple RNA-polymerase droplet bounces left-to-right across a DNA track. A yellow promoter zone glows in the middle. Press A at the exact moment the droplet crosses the promoter.</p>
+        <p><strong>Why it's fun:</strong> the droplet speeds up after every successful hit. By the third hit you're reading pixels faster than thought. Nail all three in a row and the strands visually separate, a star-field erupts, the level-up melody plays.</p>
+        <p><strong>The stakes:</strong> miss the promoter zone three times and transcription fails — huge damage to the Cell Health bar. The "cell shuts down" splash screen makes it sting.</p>
+        <p><strong>Skill-tested:</strong> timing, reflex, and the nerve to hold your press until the droplet is right on the zone.</p>
       </div>
     </div>
   </div>
@@ -662,12 +685,13 @@ a { color: inherit; text-decoration: none; }
 <section class="section section-maze" id="maze">
   <div class="container">
     <span class="section-kicker reveal">04 · LEVEL 3 — mRNA MAZE</span>
-    <h2 class="section-heading reveal">A dangerous journey through the cytoplasm.</h2>
+    <h2 class="section-heading reveal">Dodge the enzymes. Grab the energy. Reach the ribosome.</h2>
     <div class="split">
       <div class="split-text reveal">
-        <p>Once mRNA is made, it has to travel from the nucleus, out through a <strong>nuclear pore complex</strong> (each cell has thousands of these gates), and across the cytoplasm to a <strong>ribosome</strong>. Along the way it faces enemies — enzymes called RNases that shred unprotected RNA — and it needs <strong>ATP</strong> energy to keep moving.</p>
-        <p>The 5' cap and poly-A tail aren't just decoration. They physically protect the ends of the message from enzymes, buying enough time to be translated. Typical mRNA lifespan in a human cell is minutes to hours.</p>
-        <p>In Level 3 you steer the mRNA through a maze. Dodge enzyme hazards, collect ATP energy packets, and reach the ribosome before your timer — or your cell health — runs out.</p>
+        <p><strong>What you do:</strong> steer a purple mRNA sprite around a moving grid of red RNase enzymes, collecting gold ATP packets while a countdown timer ticks down.</p>
+        <p><strong>Why it's fun:</strong> this is the one pure-action level. Enzymes spawn from the top and rain down at random speeds. Energy packets flash into being in random spots. You're dodging, grabbing, and hunting for the green ribosome all at once.</p>
+        <p><strong>The stakes:</strong> every enzyme hit is 20 Cell Health gone and a fire-effect explosion. Reach the ribosome without enough ATP and it refuses to accept you — you have to keep collecting. Let the timer hit zero and the cell dies of RNA degradation.</p>
+        <p><strong>Reward:</strong> arrive with full energy, heal +20, and the level transitions to Translation with a cool-radial burst.</p>
       </div>
       <div class="maze-demo reveal">
         <div class="maze-grid" id="maze-grid"></div>
@@ -681,9 +705,9 @@ a { color: inherit; text-decoration: none; }
 <section class="section section-translation" id="translation">
   <div class="container">
     <span class="section-kicker reveal">05 · LEVEL 4 — TRANSLATION</span>
-    <h2 class="section-heading reveal">Read the code, three letters at a time.</h2>
+    <h2 class="section-heading reveal">Three letters flash. Three choices. Pick fast.</h2>
 
-    <p class="section-lead reveal">The ribosome reads mRNA in groups of three nucleotides — <strong>codons</strong>. Each codon specifies one amino acid. With 4 letters in 3 positions, there are 64 possible codons to code for 20 amino acids plus start and stop signals. <strong>AUG</strong> is the universal start codon (also codes for methionine). <strong>UAA, UAG, UGA</strong> are stop codons — they terminate translation.</p>
+    <p class="section-lead reveal"><strong>What you do:</strong> a codon appears in 3-D-spinning color tiles. Three amino-acid cards slide in below. Move the highlight arrow with left / right. Hit A to confirm. Get five codons right in a row and you've synthesized a full protein — confetti, win melody, victory screen.</p>
 
     <div class="codon-demo reveal">
       <div class="codon-track">
@@ -693,64 +717,55 @@ a { color: inherit; text-decoration: none; }
       </div>
       <div class="codon-arrow">↓</div>
       <div class="amino-options">
-        <div class="amino-card amino-correct" data-correct>Methionine (Met) — START</div>
+        <div class="amino-card amino-correct" data-correct>Methionine (Met)</div>
         <div class="amino-card">Leucine (Leu)</div>
         <div class="amino-card">Valine (Val)</div>
       </div>
-      <p class="caption">Click the correct amino acid for this codon.</p>
+      <p class="caption">Try the in-game feel — tap the right card, watch the shake.</p>
     </div>
 
-    <div class="codon-chart reveal">
-      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-a)">A</span><span style="background:var(--c-u)">U</span><span style="background:var(--c-g);color:#000">G</span></div> Met · START</div>
-      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-u)">U</span><span style="background:var(--c-u)">U</span><span style="background:var(--c-u)">U</span></div> Phe</div>
-      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-c);color:#000">C</span><span style="background:var(--c-a)">A</span><span style="background:var(--c-u)">U</span></div> His</div>
-      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-g);color:#000">G</span><span style="background:var(--c-c);color:#000">C</span><span style="background:var(--c-a)">A</span></div> Ala</div>
-      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-u)">U</span><span style="background:var(--c-a)">A</span><span style="background:var(--c-c);color:#000">C</span></div> Tyr</div>
-      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-u)">U</span><span style="background:var(--c-a)">A</span><span style="background:var(--c-a)">A</span></div> STOP</div>
-      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-u)">U</span><span style="background:var(--c-a)">A</span><span style="background:var(--c-g);color:#000">G</span></div> STOP</div>
-      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-u)">U</span><span style="background:var(--c-g);color:#000">G</span><span style="background:var(--c-a)">A</span></div> STOP</div>
-    </div>
+    <p class="section-lead reveal" style="margin-top: 2.5rem;"><strong>Why it hooks you:</strong> every correct pick scores +20 and plays a rising chime. Every wrong pick shakes the screen, flashes red, and drops your Cell Health by 20. If you've already taken hits in Levels 1–3, one sloppy translation round is enough to kill the cell. The difficulty ramp feels real.</p>
   </div>
 </section>
 
-<!-- MUTATIONS -->
+<!-- WAYS TO LOSE -->
 <section class="section section-mutations" id="mutations">
   <div class="container">
-    <span class="section-kicker reveal">06 · WHEN THINGS GO WRONG</span>
-    <h2 class="section-heading reveal">Every mistake has a biological cost.</h2>
-    <p class="section-lead reveal">All four levels feed into one shared <strong>Cell Health</strong> bar. Each mistake type maps to a real biological failure mode:</p>
+    <span class="section-kicker reveal">06 · EIGHT WAYS YOUR CELL DIES</span>
+    <h2 class="section-heading reveal">Losing is never just <em>"game over."</em></h2>
+    <p class="section-lead reveal">Every mistake is themed. Every death has its own on-screen event, sound effect, and explanation. The Cell Health bar isn't cosmetic — it's the connective tissue that makes four tiny games feel like one living thing.</p>
     <div class="mut-grid">
       <div class="mut-card reveal">
-        <h3>POINT MUTATION</h3>
-        <p>One base swapped for another. If a purine swaps for a pyrimidine, the mutation is a transversion; otherwise a transition. Most are silent, but some change the amino acid and break the protein.</p>
+        <h3>MUTATION OVERLOAD</h3>
+        <p>Pair three wrong bases in Level 1 and the strand goes unstable. A "DNA DAMAGE DETECTED" splash fires. Big Cell Health hit. The helix visibly glitches.</p>
       </div>
       <div class="mut-card reveal">
-        <h3>MISSENSE</h3>
-        <p>A codon change produces a different amino acid. Sometimes harmless, sometimes devastating — sickle cell anemia is a single A→T substitution in hemoglobin.</p>
+        <h3>PROMOTER MISS</h3>
+        <p>Drop the RNA polymerase outside the promoter too many times in Level 2 and the cell shuts transcription down. "Transcription failed" — crushing.</p>
       </div>
       <div class="mut-card reveal">
-        <h3>NONSENSE</h3>
-        <p>A codon changes into a premature stop codon. Translation halts early, producing a truncated, usually nonfunctional protein.</p>
+        <h3>ENZYME STRIKE</h3>
+        <p>Take an RNase hit in Level 3 and a fire-effect explosion blasts off the enzyme while you lose 20 Cell Health. Keep getting hit and the maze ends early.</p>
       </div>
       <div class="mut-card reveal">
-        <h3>FRAMESHIFT</h3>
-        <p>An insertion or deletion shifts the reading frame. Every codon downstream is rewritten — usually catastrophic.</p>
+        <h3>ENERGY DROUGHT</h3>
+        <p>Arrive at the ribosome without enough ATP and the level refuses to end. Let the timer expire and the mRNA is degraded for good.</p>
       </div>
       <div class="mut-card reveal">
-        <h3>FAILED TRANSCRIPTION</h3>
-        <p>RNA polymerase binds the wrong promoter or produces a faulty transcript. The cell wastes resources and may enter stress response.</p>
-      </div>
-      <div class="mut-card reveal">
-        <h3>mRNA DEGRADATION</h3>
-        <p>RNases chew up unprotected message before it reaches a ribosome. No mRNA, no protein, no function.</p>
+        <h3>BAD AMINO ACID</h3>
+        <p>Pick the wrong card in Level 4 and the screen shakes, a wrong-answer tone plays, and the protein misfolds. 20 Cell Health gone per miss.</p>
       </div>
       <div class="mut-card reveal">
         <h3>MISFOLDED PROTEIN</h3>
-        <p>Wrong amino acid sequence, wrong 3D shape, wrong job. Some misfolded proteins (prions) even corrupt neighbors.</p>
+        <p>Pile up enough wrong amino acids and even if you survive, the final protein never folds correctly — nonfunctional, level lost.</p>
+      </div>
+      <div class="mut-card reveal">
+        <h3>TIMER DEGRADATION</h3>
+        <p>Every level has a soft time pressure. Linger too long in Level 1 and the strand degrades on its own. The clock is an enemy.</p>
       </div>
       <div class="mut-card reveal">
         <h3>CELL DEATH</h3>
-        <p>If errors pile up faster than repair enzymes can fix them, the cell triggers apoptosis — programmed self-destruction.</p>
+        <p>Hit zero on Cell Health at any point and it's over. Death melody plays. Background turns blood red. Dissolve effect wipes the sprites away.</p>
       </div>
     </div>
   </div>
@@ -759,8 +774,8 @@ a { color: inherit; text-decoration: none; }
 <!-- HEALTH -->
 <section class="section section-health">
   <div class="container">
-    <span class="section-kicker reveal">07 · THE CELL HEALTH BAR</span>
-    <h2 class="section-heading reveal">One unified stakes system across all four levels.</h2>
+    <span class="section-kicker reveal">07 · ONE HEALTH BAR · FOUR LEVELS</span>
+    <h2 class="section-heading reveal">Every mistake in every level hits the <em>same</em> bar.</h2>
     <div class="health-visual reveal">
       <div class="cell-org">
         <div class="cell-nucleus"></div>
@@ -769,12 +784,12 @@ a { color: inherit; text-decoration: none; }
         <div class="health-bar" id="demo-health"><div class="health-bar-fill"></div></div>
         <div class="health-bar-label">CELL HEALTH: <span id="health-num">100</span>%</div>
         <div class="health-buttons">
-          <button id="damage-btn" class="btn btn-small">INFLICT MUTATION (-15)</button>
-          <button id="heal-btn" class="btn btn-small">REPAIR DNA (+10)</button>
+          <button id="damage-btn" class="btn btn-small">TAKE A HIT (-15)</button>
+          <button id="heal-btn" class="btn btn-small">HEAL (+10)</button>
         </div>
       </div>
     </div>
-    <p class="section-lead reveal" style="margin-top: 2rem;">Mutations in Level 1, missed promoters in Level 2, enzyme hits in Level 3, and wrong amino acids in Level 4 all drain the same cell-health bar. Hit zero and the cell dies — game over, dissolve effect, death melody. Recover health by reaching new levels or collecting ATP energy in the maze.</p>
+    <p class="section-lead reveal" style="margin-top: 2rem;">Try the demo — tap the buttons, watch the bar move. This is the exact mechanic inside the game. Clear a level and you heal. Botch a pairing, miss a promoter, bump an enzyme, pick a bad amino acid — you bleed. Stack mistakes across the whole run and the cell flatlines on you. <strong>That's why the game feels like a game, not a worksheet.</strong></p>
   </div>
 </section>
 
@@ -782,7 +797,7 @@ a { color: inherit; text-decoration: none; }
 <section class="section section-play" id="play">
   <div class="container">
     <h2 class="section-heading reveal">Ready to play?</h2>
-    <p class="section-lead reveal">The game runs on <strong>Microsoft MakeCode Arcade</strong> — free, browser-based, no account required. Open the link below, switch the editor to Python, and paste in <code>dna_game.py</code>.</p>
+    <p class="section-lead reveal">The game runs on <strong>Microsoft MakeCode Arcade</strong> — free, browser-based, no account required. Two minutes from here to your first correct base pair.</p>
 
     <div class="play-card reveal">
       <div class="play-card-inner">
@@ -830,8 +845,8 @@ a { color: inherit; text-decoration: none; }
       <div class="footer-strand"></div>
     </div>
     <div class="footer-brand">CELL STUDIO</div>
-    <p>Interactive biology for curious humans.</p>
-    <p class="footer-small">A → T · C → G · U → A. The code is universal.</p>
+    <p>Pixel-art biology for anyone with a keyboard and a curiosity streak.</p>
+    <p class="footer-small">Four levels · One cell · Play it, don't read about it.</p>
   </div>
 </footer>
 
@@ -902,11 +917,21 @@ soundBtn.addEventListener('click', () => {
 });
 document.addEventListener('click', () => Sound.click(), { once: true });
 
-/* 3. SCROLL PROGRESS */
+/* 3. SCROLL PROGRESS + HERO DNA FADE/EXPAND */
 const progress = document.getElementById('scroll-progress');
+const heroBackdrop = document.querySelector('.hero-backdrop');
 window.addEventListener('scroll', () => {
   const h = document.documentElement;
   progress.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100 + '%';
+  // Hero DNA: expand 1x → 1.45x as you scroll the hero, then fade to 0 by 1.1 * viewport
+  if (heroBackdrop) {
+    const vh = window.innerHeight || 800;
+    const p = Math.min(1, Math.max(0, h.scrollTop / vh));
+    const scale = 1 + p * 0.45;
+    const opacity = Math.max(0, 1 - Math.pow(p, 1.3));
+    heroBackdrop.style.transform = `scale(${scale})`;
+    heroBackdrop.style.opacity = opacity;
+  }
 });
 
 /* 4. MINIMAL CURSOR SPOT */
@@ -948,7 +973,7 @@ setInterval(spawnParticle, 1000);
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x05060d, 40, 140);
   const camera = new THREE.PerspectiveCamera(55, mount.clientWidth / mount.clientHeight, 0.1, 500);
-  camera.position.set(0, 0, 55);
+  camera.position.set(0, 0, 70);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(mount.clientWidth, mount.clientHeight);
@@ -963,7 +988,7 @@ setInterval(spawnParticle, 1000);
   const dna = new THREE.Group();
   scene.add(dna);
 
-  const PAIR_COUNT = 70, HELIX_RADIUS = 6, PAIR_SPACING = 1.4, TWIST = Math.PI / 5;
+  const PAIR_COUNT = 110, HELIX_RADIUS = 9, PAIR_SPACING = 1.6, TWIST = Math.PI / 5;
   const totalHeight = PAIR_COUNT * PAIR_SPACING;
   const colors = { A: 0xff3b4c, T: 0x3277ff, C: 0x30d68a, G: 0xffd23b };
   const pairs = [['A','T'], ['G','C'], ['T','A'], ['C','G'], ['A','T'], ['T','A'], ['G','C'], ['C','G']];
