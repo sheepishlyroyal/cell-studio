@@ -1,347 +1,1311 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cell Studio — DNA: Code of Life</title>
-  <meta name="description" content="Cell Studio presents DNA: Code of Life — an educational biology game about the central dogma." />
-  <link rel="stylesheet" href="styles.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cell Studio — DNA: Code of Life</title>
+<meta name="description" content="Cell Studio presents DNA: Code of Life — an educational biology game about the central dogma." />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* ============================================================
+   CELL STUDIO — DNA: CODE OF LIFE
+   All styles inline. One-file build.
+   ============================================================ */
+:root {
+  --c-a: #ff3b4c;   --c-t: #3277ff;   --c-c: #30d68a;
+  --c-g: #ffd23b;   --c-u: #b44dff;
+  --bg-0: #05060d;  --bg-1: #0b0d1c;  --bg-2: #141836;
+  --ink: #ecefff;   --ink-dim: #9aa3c7;   --accent: #7cf9ff;
+  --f-display: 'Press Start 2P', monospace;
+  --f-body: 'Space Grotesk', system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg-0); color: var(--ink);
+  font-family: var(--f-body); line-height: 1.6;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+
+/* LOADER */
+.loader {
+  position: fixed; inset: 0; background: var(--bg-0);
+  z-index: 10000; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: opacity 0.8s ease, visibility 0.8s;
+}
+.loader.done { opacity: 0; visibility: hidden; }
+.loader-helix { position: relative; width: 80px; height: 160px; animation: loader-spin 2s linear infinite; margin-bottom: 2rem; }
+.loader-strand {
+  position: absolute; top: 0; left: 50%; width: 4px; height: 100%;
+  background: linear-gradient(var(--c-a), var(--c-t), var(--c-c), var(--c-g));
+  transform-origin: top center;
+}
+.loader-strand:nth-child(1) { transform: translateX(-50%) rotateY(0deg); }
+.loader-strand:nth-child(2) { transform: translateX(-50%) rotateY(90deg); }
+.loader-brand { font-family: var(--f-display); font-size: 1rem; letter-spacing: 6px; color: var(--accent); margin-bottom: 0.6rem; }
+.loader-sub { font-family: var(--f-display); font-size: 0.55rem; letter-spacing: 3px; color: var(--ink-dim); animation: pulse-text 1.4s ease-in-out infinite; }
+@keyframes loader-spin { 0% { transform: rotateX(60deg) rotateY(0deg); } 100% { transform: rotateX(60deg) rotateY(360deg); } }
+@keyframes pulse-text { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* SCROLL PROGRESS */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--c-a), var(--c-g), var(--c-c), var(--c-t), var(--c-u));
+  z-index: 999; box-shadow: 0 0 10px var(--accent);
+  transition: width 0.08s linear;
+}
+
+/* MINIMAL CURSOR ACCENT (subtle, not distracting) */
+.cursor-spot {
+  position: fixed; top: 0; left: 0; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  pointer-events: none; z-index: 9999;
+  mix-blend-mode: screen;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s ease, height 0.2s ease, opacity 0.3s ease;
+  opacity: 0.7;
+}
+.cursor-spot.active { width: 24px; height: 24px; opacity: 0.35; }
+@media (max-width: 720px) { .cursor-spot { display: none; } }
+
+/* PARTICLES */
+.particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+.particle { position: absolute; font-family: var(--f-display); font-weight: bold; opacity: 0.18; animation: float-up linear infinite; }
+@keyframes float-up {
+  0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.35; } 90% { opacity: 0.35; }
+  100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+}
+
+/* SOUND TOGGLE */
+.sound-toggle {
+  position: fixed; top: 1.2rem; right: 1.2rem; z-index: 100;
+  background: rgba(10,14,35,0.8); border: 1px solid rgba(124, 249, 255, 0.4);
+  color: var(--accent); font-family: var(--f-display); font-size: 0.55rem;
+  padding: 0.6rem 0.9rem; cursor: pointer; backdrop-filter: blur(10px);
+  letter-spacing: 2px; transition: all 0.25s ease;
+}
+.sound-toggle:hover { background: var(--accent); color: var(--bg-0); box-shadow: 0 0 20px var(--accent); }
+
+/* NAVBAR */
+.navbar {
+  position: fixed; top: 0; left: 0; width: 100%;
+  padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center;
+  z-index: 50; background: rgba(5, 6, 13, 0.6); backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,0.05); transition: all 0.3s ease;
+}
+.navbar.scrolled { padding: 0.6rem 2rem; background: rgba(5, 6, 13, 0.92); }
+.brand { display: flex; align-items: center; gap: 0.8rem; }
+.brand-mark { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; width: 28px; height: 28px; transform: rotate(45deg); }
+.brand-dot { border-radius: 2px; animation: brand-pulse 2s ease-in-out infinite; }
+.brand-mark .brand-dot:nth-child(1) { background: var(--c-a); animation-delay: 0s; }
+.brand-mark .brand-dot:nth-child(2) { background: var(--c-t); animation-delay: 0.15s; }
+.brand-mark .brand-dot:nth-child(3) { background: var(--c-c); animation-delay: 0.3s; }
+.brand-mark .brand-dot:nth-child(4) { background: var(--c-g); animation-delay: 0.45s; }
+@keyframes brand-pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.8); opacity: 0.7; } }
+.brand-text { display: flex; flex-direction: column; line-height: 1; }
+.brand-name { font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 3px; color: var(--ink); }
+.brand-tag { font-size: 0.65rem; color: var(--ink-dim); margin-top: 0.3rem; letter-spacing: 1px; }
+
+.nav-links { display: flex; gap: 2rem; list-style: none; }
+.nav-link {
+  font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 2px;
+  position: relative; padding: 0.4rem 0; transition: color 0.2s;
+  cursor: pointer;
+}
+.nav-link::after {
+  content: ''; position: absolute; bottom: -2px; left: 0;
+  width: 0%; height: 2px; background: var(--accent); transition: width 0.3s;
+}
+.nav-link:hover { color: var(--accent); }
+.nav-link:hover::after { width: 100%; }
+.nav-cta { background: var(--c-u); padding: 0.5rem 1rem; border-radius: 4px; color: #fff !important; }
+.nav-cta:hover { background: var(--c-a); box-shadow: 0 0 18px var(--c-a); }
+.nav-cta::after { display: none; }
+@media (max-width: 720px) { .brand-tag { display: none; } .nav-links { gap: 1rem; } }
+
+/* HERO */
+.hero {
+  position: relative; min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, var(--bg-2) 0%, var(--bg-0) 80%);
+}
+.hero-backdrop { position: absolute; inset: 0; z-index: 0; }
+#three-dna { width: 100%; height: 100%; display: block; }
+.hero-content { position: relative; z-index: 2; text-align: center; padding: 0 2rem; }
+.hero-kicker {
+  font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 6px;
+  color: var(--accent); margin-bottom: 1.5rem;
+  opacity: 0; animation: fade-up 1s ease 0.2s forwards;
+}
+.hero-title {
+  font-family: var(--f-display); font-size: clamp(1.6rem, 5vw, 3.4rem);
+  letter-spacing: 6px; margin-bottom: 2rem;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6em;
+}
+.title-word {
+  display: inline-block; opacity: 0; transform: translateY(40px);
+  animation: title-in 0.8s ease forwards;
+  text-shadow: 0 0 20px currentColor; cursor: pointer;
+}
+.title-word:nth-child(1) { color: var(--c-a); animation-delay: 0.3s; }
+.title-word:nth-child(2) { color: var(--ink); animation-delay: 0.5s; }
+.title-word:nth-child(3) { color: var(--c-t); animation-delay: 0.7s; }
+.title-word:nth-child(4) { color: var(--c-c); animation-delay: 0.9s; }
+.title-word:nth-child(5) { color: var(--c-g); animation-delay: 1.1s; }
+@keyframes title-in {
+  0% { opacity: 0; transform: translateY(40px) rotateX(-60deg); }
+  100% { opacity: 1; transform: translateY(0) rotateX(0); }
+}
+.hero-subtitle {
+  max-width: 640px; margin: 0 auto 3rem; font-size: 1.15rem; color: var(--ink-dim);
+  opacity: 0; transform: translateY(20px); animation: fade-up 1s ease 1.4s forwards;
+}
+@keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.hero-cta {
+  display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap;
+  opacity: 0; transform: translateY(20px); animation: fade-up 1s ease 1.7s forwards;
+}
+.scroll-hint {
+  position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+  font-family: var(--f-display); font-size: 0.5rem; letter-spacing: 3px;
+  color: var(--ink-dim); display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  opacity: 0; animation: fade-up 1s ease 2s forwards;
+}
+.scroll-hint span { display: block; width: 2px; height: 40px; background: linear-gradient(to bottom, transparent, var(--accent)); animation: scroll-line 1.8s ease-in-out infinite; }
+@keyframes scroll-line { 0%,100% { transform: scaleY(0.3); opacity: 0.3; } 50% { transform: scaleY(1); opacity: 1; } }
+
+/* BUTTONS */
+.btn {
+  display: inline-block; font-family: var(--f-display); font-size: 0.7rem;
+  letter-spacing: 3px; padding: 1rem 2rem; border: 2px solid currentColor;
+  border-radius: 4px; cursor: pointer; background: transparent; color: var(--ink);
+  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+  text-decoration: none; position: relative; overflow: hidden;
+}
+.btn::before {
+  content: ''; position: absolute; top: 0; left: -100%;
+  width: 100%; height: 100%; background: currentColor;
+  transition: left 0.4s ease; z-index: -1;
+}
+.btn:hover::before { left: 0; }
+.btn:hover { color: var(--bg-0); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,255,255,0.1); }
+.btn-primary { color: var(--c-u); }
+.btn-primary:hover { color: var(--bg-0); box-shadow: 0 10px 30px var(--c-u); }
+.btn-ghost { color: var(--accent); }
+.btn-ghost:hover { color: var(--bg-0); box-shadow: 0 10px 30px var(--accent); }
+.btn-big { padding: 1.3rem 2.6rem; font-size: 0.8rem; }
+.btn-small { padding: 0.6rem 1rem; font-size: 0.5rem; }
+
+/* SECTIONS */
+.section { position: relative; padding: 8rem 0; overflow: hidden; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 2; }
+.section-kicker { font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 4px; color: var(--accent); display: block; margin-bottom: 1.5rem; }
+.section-heading { font-size: clamp(1.8rem, 3.8vw, 3rem); font-weight: 700; line-height: 1.15; margin-bottom: 2rem; max-width: 900px; }
+.section-heading em { font-style: italic; background: linear-gradient(90deg, var(--c-a), var(--c-u)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.section-title { font-size: clamp(1.6rem, 3.5vw, 2.6rem); margin-bottom: 3rem; max-width: 800px; }
+.section-lead { font-size: 1.15rem; color: var(--ink-dim); max-width: 780px; margin-bottom: 2.5rem; line-height: 1.7; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+.split.reverse .split-text { order: 2; }
+@media (max-width: 860px) { .split { grid-template-columns: 1fr; } .split.reverse .split-text { order: 0; } }
+.split-text p { margin-bottom: 1.2rem; font-size: 1.05rem; }
+.split-text strong { color: var(--accent); }
+
+/* REVEAL */
+.reveal { opacity: 0; transform: translateY(50px); transition: opacity 0.9s cubic-bezier(0.2,0.9,0.3,1), transform 0.9s cubic-bezier(0.2,0.9,0.3,1); }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+.split-heading .char {
+  display: inline-block; opacity: 0; transform: translateY(30px) rotateZ(10deg);
+  transition: opacity 0.5s ease, transform 0.6s cubic-bezier(0.2,0.9,0.3,1);
+}
+.split-heading.visible .char { opacity: 1; transform: translateY(0) rotateZ(0); }
+
+/* STATS */
+.section-stats { background: linear-gradient(180deg, var(--bg-0), var(--bg-1)); padding: 6rem 0; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; text-align: center; }
+.stat { padding: 2rem 1rem; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(255,255,255,0.02); transition: transform 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease; }
+.stat:hover { transform: translateY(-6px); border-color: var(--accent); box-shadow: 0 10px 40px rgba(124, 249, 255, 0.15); }
+.stat-num { font-family: var(--f-display); font-size: 2rem; color: var(--c-g); margin-bottom: 0.6rem; display: inline-block; text-shadow: 0 0 20px var(--c-g); }
+.stat-unit { font-family: var(--f-display); font-size: 1.2rem; color: var(--c-g); margin-left: 4px; }
+.stat-label { color: var(--ink-dim); font-size: 0.95rem; line-height: 1.5; }
+
+/* LETTER GRID */
+.letter-grid-section { padding: 6rem 0 8rem; background: linear-gradient(180deg, var(--bg-1), var(--bg-0)); text-align: center; }
+.letter-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; margin: 3rem auto; max-width: 880px; perspective: 800px; }
+.letter-cell {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-family: var(--f-display); font-size: 0.85rem; border-radius: 4px;
+  transform-style: preserve-3d; opacity: 0; animation: letter-drop 0.6s ease forwards;
+  cursor: pointer; transition: transform 0.25s ease, box-shadow 0.25s ease;
+  user-select: none; position: relative;
+}
+.letter-cell:hover { transform: translateZ(30px) translateY(-4px) scale(1.15); z-index: 2; }
+.letter-cell.A { background: var(--c-a); color: #fff; box-shadow: 0 0 10px var(--c-a); }
+.letter-cell.T { background: var(--c-t); color: #fff; box-shadow: 0 0 10px var(--c-t); }
+.letter-cell.C { background: var(--c-c); color: #000; box-shadow: 0 0 10px var(--c-c); }
+.letter-cell.G { background: var(--c-g); color: #000; box-shadow: 0 0 10px var(--c-g); }
+.letter-cell.U { background: var(--c-u); color: #fff; box-shadow: 0 0 10px var(--c-u); }
+.letter-cell.glitching { animation: letter-jitter 0.04s linear infinite; }
+@keyframes letter-drop { 0% { opacity: 0; transform: translateY(-30px) rotateX(-90deg); } 100% { opacity: 1; transform: translateY(0) rotateX(0); } }
+@keyframes letter-jitter {
+  0% { transform: translate(-1px, 0) scale(1.1); }
+  25% { transform: translate(1px, -1px) scale(1.15); }
+  50% { transform: translate(-1px, 1px) scale(1.1); }
+  75% { transform: translate(1px, 0) scale(1.15); }
+  100% { transform: translate(0, 0) scale(1.1); }
+}
+.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem; margin-top: 3rem; font-size: 0.95rem; color: var(--ink-dim); }
+.legend-item { display: flex; align-items: center; gap: 0.5rem; }
+.swatch { width: 20px; height: 20px; border-radius: 4px; display: inline-block; }
+.swatch-A { background: var(--c-a); }  .swatch-T { background: var(--c-t); }
+.swatch-C { background: var(--c-c); }  .swatch-G { background: var(--c-g); }
+.swatch-U { background: var(--c-u); }
+
+/* HORIZONTAL PINNED */
+.section-pinned { position: relative; height: 400vh; background: linear-gradient(180deg, var(--bg-0), #0c1030); }
+.pinned-track { position: sticky; top: 0; height: 100vh; display: flex; width: 400vw; will-change: transform; }
+.pinned-panel { flex: 0 0 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative; }
+.pinned-panel::before { content: ''; position: absolute; inset: 0; opacity: 0.25; }
+.pinned-1::before { background: radial-gradient(circle at 30% 50%, var(--c-a), transparent 50%); }
+.pinned-2::before { background: radial-gradient(circle at 50% 50%, var(--c-u), transparent 50%); }
+.pinned-3::before { background: radial-gradient(circle at 70% 50%, var(--c-c), transparent 50%); }
+.pinned-4::before { background: radial-gradient(circle at 50% 50%, var(--c-g), transparent 50%); }
+.pinned-inner { position: relative; z-index: 2; max-width: 720px; text-align: center; }
+.pinned-kicker { font-family: var(--f-display); font-size: 0.7rem; letter-spacing: 4px; color: var(--accent); margin-bottom: 1.5rem; }
+.pinned-panel h2 { font-family: var(--f-display); font-size: clamp(2rem, 6vw, 4.5rem); letter-spacing: 4px; margin-bottom: 1.5rem; text-shadow: 0 0 30px currentColor; }
+.pinned-1 h2 { color: var(--c-a); } .pinned-2 h2 { color: var(--c-u); }
+.pinned-3 h2 { color: var(--c-c); } .pinned-4 h2 { color: var(--c-g); }
+.pinned-panel p { font-size: 1.2rem; color: var(--ink); max-width: 560px; margin: 0 auto; line-height: 1.6; }
+@media (max-width: 720px) {
+  .section-pinned { height: auto; }
+  .pinned-track { position: static; width: 100%; flex-direction: column; }
+  .pinned-panel { flex: 0 0 auto; height: auto; min-height: 50vh; padding: 5rem 2rem; }
+}
+
+/* DOGMA */
+.section-intro { background: linear-gradient(180deg, #0c1030, var(--bg-0)); }
+.dogma-flow { display: flex; align-items: center; justify-content: center; gap: 0.8rem; flex-wrap: wrap; }
+.dogma-node { width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 2px; color: #fff; animation: dogma-pulse 2.5s ease-in-out infinite; box-shadow: 0 0 30px currentColor; }
+.dogma-dna { background: var(--c-a); animation-delay: 0s; }
+.dogma-rna { background: var(--c-u); animation-delay: 0.4s; }
+.dogma-protein { background: var(--c-c); animation-delay: 0.8s; color: #000; }
+.dogma-arrow { width: 80px; height: 24px; fill: var(--accent); stroke: var(--accent); }
+.dogma-arrow path { stroke-dasharray: 200; stroke-dashoffset: 200; animation: dash-in 1.4s ease forwards; }
+@keyframes dash-in { to { stroke-dashoffset: 0; } }
+@keyframes dogma-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+/* DNA */
+.section-dna { background: linear-gradient(180deg, var(--bg-0), #0f1030); }
+.parallax-bg { position: absolute; inset: 0; background-image: radial-gradient(circle at 20% 30%, rgba(255,59,76,0.12), transparent 40%), radial-gradient(circle at 80% 70%, rgba(50,119,255,0.12), transparent 40%); will-change: transform; }
+.fact-list { list-style: none; margin-top: 2rem; }
+.fact-list li { display: flex; align-items: baseline; gap: 1rem; padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.08); font-size: 1.05rem; }
+.fact-num { font-family: var(--f-display); font-size: 1.2rem; color: var(--c-g); min-width: 80px; }
+.pair-rule { display: flex; gap: 2rem; margin-top: 2rem; flex-wrap: wrap; }
+.pair-rule-row { display: flex; align-items: center; gap: 0.5rem; font-family: var(--f-display); font-size: 1.2rem; color: var(--ink); }
+.pill { width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 0 14px currentColor; }
+.pill-A { background: var(--c-a); } .pill-T { background: var(--c-t); }
+.pill-C { background: var(--c-c); color: #000; } .pill-G { background: var(--c-g); color: #000; }
+
+.helix-demo { position: relative; width: 100%; height: 420px; perspective: 1000px; }
+.helix-rung { position: absolute; left: 50%; width: 200px; height: 20px; margin-left: -100px; display: flex; justify-content: space-between; align-items: center; transform-origin: center; transition: transform 0.3s ease; }
+.helix-rung:hover .helix-bond { background: #fff; box-shadow: 0 0 20px #fff; }
+.helix-base { width: 34px; height: 34px; border-radius: 8px; font-family: var(--f-display); font-size: 0.85rem; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 0 14px currentColor; cursor: pointer; }
+.helix-base.A { background: var(--c-a); } .helix-base.T { background: var(--c-t); }
+.helix-base.C { background: var(--c-c); color: #000; } .helix-base.G { background: var(--c-g); color: #000; }
+.helix-bond { flex: 1; height: 3px; margin: 0 4px; background: rgba(255,255,255,0.35); transition: all 0.3s ease; }
+.caption { margin-top: 1rem; font-size: 0.9rem; color: var(--ink-dim); text-align: center; font-style: italic; }
+
+/* TRANSCRIPTION */
+.section-transcription { background: linear-gradient(180deg, #0f1030, var(--bg-0)); }
+.poly-track { position: relative; height: 180px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); overflow: hidden; cursor: pointer; }
+.poly-promoter { position: absolute; top: 50%; left: 40%; transform: translate(-50%, -50%); width: 120px; padding: 0.6rem; background: rgba(255, 210, 59, 0.15); border: 2px dashed var(--c-g); border-radius: 6px; font-family: var(--f-display); font-size: 0.5rem; letter-spacing: 2px; color: var(--c-g); text-align: center; animation: promoter-glow 1.8s ease-in-out infinite; }
+@keyframes promoter-glow { 0%,100% { box-shadow: 0 0 10px var(--c-g); } 50% { box-shadow: 0 0 30px var(--c-g); } }
+.poly-droplet { position: absolute; top: 30%; left: 5%; width: 36px; height: 36px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #fff, var(--c-u)); box-shadow: 0 0 20px var(--c-u); animation: droplet-slide 2.6s ease-in-out infinite alternate; }
+@keyframes droplet-slide { 0% { left: 5%; transform: translateY(0) scale(1); } 50% { transform: translateY(20px) scale(1.15); } 100% { left: 85%; transform: translateY(0) scale(1); } }
+.poly-strand { position: absolute; bottom: 20%; left: 0; width: 100%; height: 6px; background: repeating-linear-gradient(90deg, var(--c-a) 0 24px, var(--c-t) 24px 48px, var(--c-c) 48px 72px, var(--c-g) 72px 96px); opacity: 0.8; animation: strand-shift 6s linear infinite; }
+@keyframes strand-shift { 0% { background-position: 0 0; } 100% { background-position: 96px 0; } }
+
+/* MAZE */
+.section-maze { background: linear-gradient(180deg, var(--bg-0), #17102e); }
+.maze-grid { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr); gap: 3px; aspect-ratio: 1 / 1; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); }
+.maze-cell { background: rgba(255,255,255,0.03); border-radius: 2px; transition: background 0.3s ease; }
+.maze-cell.wall { background: rgba(180, 77, 255, 0.3); }
+.maze-cell.mrna { background: var(--c-u); box-shadow: 0 0 14px var(--c-u); animation: mrna-pulse 0.9s ease-in-out infinite; }
+.maze-cell.enzyme { background: var(--c-a); box-shadow: 0 0 10px var(--c-a); animation: enzyme-wobble 1.3s ease-in-out infinite; }
+.maze-cell.energy { background: var(--c-g); box-shadow: 0 0 14px var(--c-g); animation: energy-spin 1.8s linear infinite; }
+.maze-cell.goal { background: var(--c-c); box-shadow: 0 0 18px var(--c-c); }
+@keyframes mrna-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+@keyframes enzyme-wobble { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+@keyframes energy-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* TRANSLATION */
+.section-translation { background: linear-gradient(180deg, #17102e, #0f1030); }
+.codon-demo { margin: 3rem auto; max-width: 720px; text-align: center; }
+.codon-track { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem; }
+.codon-cell { width: 90px; height: 90px; border-radius: 14px; font-family: var(--f-display); font-size: 2rem; display: flex; align-items: center; justify-content: center; color: #fff; animation: codon-spin 3s ease-in-out infinite; box-shadow: 0 0 30px currentColor; }
+.codon-cell.color-A { background: var(--c-a); animation-delay: 0s; }
+.codon-cell.color-T { background: var(--c-t); animation-delay: 0.2s; }
+.codon-cell.color-C { background: var(--c-c); color: #000; animation-delay: 0.4s; }
+.codon-cell.color-G { background: var(--c-g); color: #000; animation-delay: 0.6s; }
+.codon-cell.color-U { background: var(--c-u); animation-delay: 0.2s; }
+@keyframes codon-spin { 0%,100% { transform: rotateY(0deg); } 50% { transform: rotateY(180deg); } }
+.codon-arrow { font-size: 3rem; color: var(--accent); margin: 0.5rem 0; animation: arrow-bounce 1s ease-in-out infinite; }
+@keyframes arrow-bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+.amino-options { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+.amino-card { padding: 1.2rem 1.6rem; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.1); border-radius: 8px; font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 2px; cursor: pointer; transition: all 0.25s ease; }
+.amino-card:hover { background: rgba(124, 249, 255, 0.08); border-color: var(--accent); transform: translateY(-4px) scale(1.02); box-shadow: 0 8px 25px rgba(124, 249, 255, 0.2); }
+.amino-card.correct { background: var(--c-c); color: #000; border-color: var(--c-c); animation: correct-shake 0.4s ease; }
+.amino-card.wrong { background: var(--c-a); color: #fff; border-color: var(--c-a); animation: wrong-shake 0.4s ease; }
+@keyframes correct-shake { 0%,100% { transform: scale(1); } 40% { transform: scale(1.15); } }
+@keyframes wrong-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+.codon-chart { margin: 3rem auto; max-width: 720px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+.codon-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; transition: all 0.3s ease; }
+.codon-row:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 6px 20px rgba(124,249,255,0.1); }
+.codon-row .mini-codon { font-family: var(--f-display); font-size: 0.8rem; letter-spacing: 2px; }
+.codon-row .mini-codon span { display: inline-block; width: 22px; height: 22px; border-radius: 4px; text-align: center; line-height: 22px; color: #fff; margin-right: 2px; font-size: 0.65rem; }
+
+/* MUTATIONS */
+.section-mutations { background: linear-gradient(180deg, #0f1030, var(--bg-0)); }
+.mut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 3rem; }
+.mut-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 1.6rem; transition: all 0.4s ease; position: relative; overflow: hidden; }
+.mut-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, var(--c-a), transparent); transition: left 0.6s ease; }
+.mut-card:hover::before { left: 100%; }
+.mut-card:hover { transform: translateY(-6px); border-color: var(--c-a); box-shadow: 0 12px 30px rgba(255,59,76,0.15); }
+.mut-card h3 { font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 2px; color: var(--c-a); margin-bottom: 0.8rem; }
+.mut-card p { font-size: 0.95rem; color: var(--ink-dim); line-height: 1.6; }
+
+/* HEALTH */
+.section-health { background: linear-gradient(180deg, var(--bg-0), #0f1030); }
+.health-visual { display: grid; grid-template-columns: 1fr 1.5fr; gap: 3rem; align-items: center; margin-top: 3rem; }
+@media (max-width: 720px) { .health-visual { grid-template-columns: 1fr; } }
+.cell-org { position: relative; aspect-ratio: 1; max-width: 340px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(124, 249, 255, 0.3), rgba(50, 119, 255, 0.05) 70%); border: 2px solid rgba(124, 249, 255, 0.3); animation: cell-breathe 3s ease-in-out infinite; overflow: hidden; }
+@keyframes cell-breathe { 0%,100% { transform: scale(1); box-shadow: 0 0 40px rgba(124, 249, 255, 0.2); } 50% { transform: scale(1.04); box-shadow: 0 0 80px rgba(124, 249, 255, 0.4); } }
+.cell-nucleus { position: absolute; top: 50%; left: 50%; width: 40%; height: 40%; border-radius: 50%; background: radial-gradient(circle, var(--c-u), var(--c-a)); transform: translate(-50%, -50%); animation: nucleus-spin 8s linear infinite; box-shadow: 0 0 30px var(--c-u); }
+@keyframes nucleus-spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+.health-bar-wrap { display: flex; flex-direction: column; gap: 1rem; }
+.health-bar { width: 100%; height: 32px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.15); border-radius: 6px; overflow: hidden; }
+.health-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--c-c), var(--c-g), var(--c-a)); transition: width 0.6s cubic-bezier(0.2, 0.9, 0.3, 1); box-shadow: 0 0 12px rgba(255,255,255,0.3); }
+.health-bar-label { font-family: var(--f-display); font-size: 0.7rem; letter-spacing: 2px; }
+.health-buttons { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+/* PLAY */
+.section-play { background: radial-gradient(ellipse at center, #1a0f3f, var(--bg-0) 80%); text-align: center; }
+.play-card { margin-top: 3rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 3rem; box-shadow: 0 40px 80px rgba(0,0,0,0.5); }
+.play-card-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; text-align: left; }
+@media (max-width: 860px) { .play-card-inner { grid-template-columns: 1fr; } }
+.gamepad { display: flex; gap: 2rem; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
+.dpad { position: relative; width: 120px; height: 120px; display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
+.dpad-btn { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); color: var(--accent); font-family: var(--f-display); font-size: 0.7rem; transition: all 0.15s ease; cursor: pointer; }
+.dpad-btn:hover { background: var(--accent); color: var(--bg-0); }
+.dpad-btn.up    { grid-column: 2; grid-row: 1; }
+.dpad-btn.down  { grid-column: 2; grid-row: 3; }
+.dpad-btn.left  { grid-column: 1; grid-row: 2; }
+.dpad-btn.right { grid-column: 3; grid-row: 2; }
+.dpad-btn.center { grid-column: 2; grid-row: 2; background: rgba(255,255,255,0.02); cursor: default; }
+.ab { display: flex; flex-direction: column; gap: 0.7rem; }
+.btn-a, .btn-b { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 0.9rem; color: #fff; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.btn-a { background: var(--c-a); box-shadow: 0 0 12px var(--c-a); }
+.btn-b { background: var(--c-t); box-shadow: 0 0 12px var(--c-t); }
+.btn-a:hover, .btn-b:hover { transform: scale(1.12); }
+.controls-list { list-style: none; font-size: 0.95rem; color: var(--ink-dim); }
+.controls-list li { padding: 0.3rem 0; }
+.controls-list strong { color: var(--accent); font-family: var(--f-display); font-size: 0.65rem; margin-right: 0.5rem; }
+.play-links { display: flex; flex-direction: column; gap: 1rem; }
+.install-steps { padding-left: 1.3rem; color: var(--ink-dim); line-height: 1.8; font-size: 0.95rem; margin-top: 0.5rem; }
+.install-steps li { padding: 0.2rem 0; }
+.install-steps strong { color: var(--accent); }
+.install-steps code { font-family: var(--f-display); font-size: 0.7rem; background: rgba(124, 249, 255, 0.1); padding: 0.15em 0.4em; border-radius: 3px; }
+
+/* FOOTER */
+.footer { background: var(--bg-0); padding: 4rem 0 3rem; text-align: center; color: var(--ink-dim); border-top: 1px solid rgba(255,255,255,0.08); }
+.footer-dna { position: relative; width: 80px; height: 140px; margin: 0 auto 2rem; transform-style: preserve-3d; animation: footer-spin 4s linear infinite; }
+.footer-strand { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: linear-gradient(var(--c-a), var(--c-t), var(--c-c), var(--c-g), var(--c-u)); transform-origin: top center; }
+.footer-strand:nth-child(1) { transform: translateX(-50%) rotateY(0deg); }
+.footer-strand:nth-child(2) { transform: translateX(-50%) rotateY(90deg); }
+@keyframes footer-spin { 0% { transform: rotateX(60deg) rotateY(0deg); } 100% { transform: rotateX(60deg) rotateY(360deg); } }
+.footer-brand { font-family: var(--f-display); font-size: 1rem; letter-spacing: 6px; color: var(--accent); margin-bottom: 0.5rem; }
+.footer-small { font-size: 0.85rem; opacity: 0.6; margin-top: 0.6rem; }
+</style>
 </head>
 <body>
 
-  <!-- ============ LOADING SCREEN ============ -->
-  <div id="loader" class="loader">
-    <div class="loader-helix">
-      <div class="loader-strand"></div>
-      <div class="loader-strand"></div>
-    </div>
-    <div class="loader-text">CELL STUDIO</div>
-    <div class="loader-sub">Decoding life...</div>
+<!-- CURSOR SPOT -->
+<div class="cursor-spot" id="cursor-spot"></div>
+
+<!-- LOADER -->
+<div id="loader" class="loader">
+  <div class="loader-helix">
+    <div class="loader-strand"></div>
+    <div class="loader-strand"></div>
   </div>
+  <div class="loader-brand">CELL STUDIO</div>
+  <div class="loader-sub">Decoding life...</div>
+</div>
 
-  <!-- ============ SOUND TOGGLE ============ -->
-  <button id="sound-toggle" class="sound-toggle" aria-label="Toggle sound">
-    <span id="sound-icon">♪</span>
-    <span id="sound-label">SOUND ON</span>
-  </button>
+<!-- SCROLL PROGRESS -->
+<div class="scroll-progress" id="scroll-progress"></div>
 
-  <!-- ============ SCROLL PROGRESS BAR ============ -->
-  <div class="scroll-progress" id="scroll-progress"></div>
+<!-- SOUND TOGGLE -->
+<button id="sound-toggle" class="sound-toggle" aria-label="Toggle sound">
+  <span id="sound-icon">♪</span>
+  <span id="sound-label">SOUND ON</span>
+</button>
 
-  <!-- ============ FLOATING PARTICLES ============ -->
-  <div class="particles" id="particles"></div>
+<!-- PARTICLES -->
+<div class="particles" id="particles"></div>
 
-  <!-- ============ NAVBAR ============ -->
-  <nav class="navbar">
-    <a href="#top" class="brand">
-      <div class="brand-mark">
-        <div class="brand-dot"></div>
-        <div class="brand-dot"></div>
-        <div class="brand-dot"></div>
-        <div class="brand-dot"></div>
-      </div>
-      <div class="brand-text">
-        <span class="brand-name">CELL STUDIO</span>
-        <span class="brand-tag">Interactive Biology</span>
-      </div>
-    </a>
-    <ul class="nav-links">
-      <li><a href="#intro" class="nav-link">About</a></li>
-      <li><a href="#dna" class="nav-link">DNA</a></li>
-      <li><a href="#transcription" class="nav-link">RNA</a></li>
-      <li><a href="#translation" class="nav-link">Protein</a></li>
-      <li><a href="#play" class="nav-link nav-cta">Play</a></li>
-    </ul>
-  </nav>
-
-  <!-- ============ HERO ============ -->
-  <header class="hero" id="top">
-    <div class="hero-backdrop">
-      <div id="three-dna"></div>
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="#top" class="brand">
+    <div class="brand-mark">
+      <div class="brand-dot"></div>
+      <div class="brand-dot"></div>
+      <div class="brand-dot"></div>
+      <div class="brand-dot"></div>
     </div>
-    <div class="hero-content">
-      <div class="hero-kicker">CELL STUDIO PRESENTS</div>
-      <h1 class="hero-title">
-        <span class="title-word" data-text="DNA">DNA</span>
-        <span class="title-word title-colon">:</span>
-        <span class="title-word" data-text="CODE">CODE</span>
-        <span class="title-word" data-text="OF">OF</span>
-        <span class="title-word" data-text="LIFE">LIFE</span>
-      </h1>
-      <p class="hero-subtitle">A four-level educational game that walks you through DNA replication, transcription, mRNA transport, and translation.</p>
-      <div class="hero-cta">
-        <a href="#intro" class="btn btn-primary">BEGIN JOURNEY</a>
-        <a href="#play" class="btn btn-ghost">PLAY THE GAME</a>
-      </div>
-      <div class="scroll-hint"><span></span>SCROLL</div>
+    <div class="brand-text">
+      <span class="brand-name">CELL STUDIO</span>
+      <span class="brand-tag">Interactive Biology</span>
     </div>
-  </header>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#intro" class="nav-link">About</a></li>
+    <li><a href="#dna" class="nav-link">DNA</a></li>
+    <li><a href="#transcription" class="nav-link">RNA</a></li>
+    <li><a href="#translation" class="nav-link">Protein</a></li>
+    <li><a href="#mutations" class="nav-link">Mutations</a></li>
+    <li><a href="#play" class="nav-link nav-cta">Play</a></li>
+  </ul>
+</nav>
 
-  <!-- ============ STATS / COUNT-UP ============ -->
-  <section class="section section-stats">
-    <div class="container">
-      <div class="stats-grid">
-        <div class="stat reveal">
-          <div class="stat-num" data-count="3200000000">0</div>
-          <div class="stat-label">Base pairs in the human genome</div>
-        </div>
-        <div class="stat reveal">
-          <div class="stat-num" data-count="2">0</div>
-          <div class="stat-unit">m</div>
-          <div class="stat-label">DNA coiled inside a single cell</div>
-        </div>
-        <div class="stat reveal">
-          <div class="stat-num" data-count="20">0</div>
-          <div class="stat-label">Amino acids used to build every protein in your body</div>
-        </div>
-        <div class="stat reveal">
-          <div class="stat-num" data-count="4">0</div>
-          <div class="stat-label">Levels in the game — one for each stage of the central dogma</div>
-        </div>
-      </div>
+<!-- HERO -->
+<header class="hero" id="top">
+  <div class="hero-backdrop">
+    <div id="three-dna"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-kicker">CELL STUDIO PRESENTS</div>
+    <h1 class="hero-title">
+      <span class="title-word" data-text="DNA">DNA</span>
+      <span class="title-word title-colon">:</span>
+      <span class="title-word" data-text="CODE">CODE</span>
+      <span class="title-word" data-text="OF">OF</span>
+      <span class="title-word" data-text="LIFE">LIFE</span>
+    </h1>
+    <p class="hero-subtitle">A four-level educational game that walks you through DNA building, transcription, mRNA transport, and translation — the entire central dogma of molecular biology.</p>
+    <div class="hero-cta">
+      <a href="#intro" class="btn btn-primary">BEGIN JOURNEY</a>
+      <a href="#play" class="btn btn-ghost">PLAY THE GAME</a>
     </div>
-  </section>
+    <div class="scroll-hint"><span></span>SCROLL</div>
+  </div>
+</header>
 
-  <!-- ============ LETTER GRID (with hover glitch) ============ -->
-  <section class="letter-grid-section" id="grid-section">
-    <div class="container">
-      <span class="section-kicker reveal">THE ALPHABET</span>
-      <h2 class="section-title reveal">Four letters. One color each. Infinite combinations.</h2>
-      <div class="letter-grid" id="letter-grid"></div>
-      <div class="legend reveal">
-        <div class="legend-item"><span class="swatch swatch-A"></span>Adenine (A) — pairs with T</div>
-        <div class="legend-item"><span class="swatch swatch-T"></span>Thymine (T) — pairs with A</div>
-        <div class="legend-item"><span class="swatch swatch-C"></span>Cytosine (C) — pairs with G</div>
-        <div class="legend-item"><span class="swatch swatch-G"></span>Guanine (G) — pairs with C</div>
-        <div class="legend-item"><span class="swatch swatch-U"></span>Uracil (U) — replaces T in RNA</div>
+<!-- STATS -->
+<section class="section section-stats">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat reveal">
+        <div class="stat-num" data-count="3200000000">0</div>
+        <div class="stat-label">Base pairs in the human genome</div>
+      </div>
+      <div class="stat reveal">
+        <div class="stat-num" data-count="2">0</div><div class="stat-unit">m</div>
+        <div class="stat-label">DNA coiled inside a single cell nucleus</div>
+      </div>
+      <div class="stat reveal">
+        <div class="stat-num" data-count="20">0</div>
+        <div class="stat-label">Standard amino acids that build every protein</div>
+      </div>
+      <div class="stat reveal">
+        <div class="stat-num" data-count="64">0</div>
+        <div class="stat-label">Possible codons in the genetic code (4³)</div>
+      </div>
+      <div class="stat reveal">
+        <div class="stat-num" data-count="99">0</div><div class="stat-unit">.9%</div>
+        <div class="stat-label">DNA identical between any two humans</div>
+      </div>
+      <div class="stat reveal">
+        <div class="stat-num" data-count="37">0</div><div class="stat-unit">T</div>
+        <div class="stat-label">Cells in the average human body (trillions)</div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ============ HORIZONTAL PINNED SECTION ============ -->
-  <section class="section-pinned" id="pinned">
-    <div class="pinned-track">
-      <div class="pinned-panel pinned-1">
-        <div class="pinned-inner">
-          <div class="pinned-kicker">STEP 01</div>
-          <h2>Replication</h2>
-          <p>Before a cell divides, every strand of DNA is copied — letter for letter — into two identical helices.</p>
-        </div>
+<!-- LETTER GRID -->
+<section class="letter-grid-section" id="grid-section">
+  <div class="container">
+    <span class="section-kicker reveal">THE ALPHABET</span>
+    <h2 class="section-title reveal">Four letters. One color each. Hover any tile.</h2>
+    <div class="letter-grid" id="letter-grid"></div>
+    <div class="legend reveal">
+      <div class="legend-item"><span class="swatch swatch-A"></span>Adenine (A) — pairs with T (two H-bonds)</div>
+      <div class="legend-item"><span class="swatch swatch-T"></span>Thymine (T) — pairs with A</div>
+      <div class="legend-item"><span class="swatch swatch-C"></span>Cytosine (C) — pairs with G (three H-bonds)</div>
+      <div class="legend-item"><span class="swatch swatch-G"></span>Guanine (G) — pairs with C</div>
+      <div class="legend-item"><span class="swatch swatch-U"></span>Uracil (U) — replaces T in RNA</div>
+    </div>
+  </div>
+</section>
+
+<!-- HORIZONTAL PINNED -->
+<section class="section-pinned" id="pinned">
+  <div class="pinned-track">
+    <div class="pinned-panel pinned-1"><div class="pinned-inner">
+      <div class="pinned-kicker">STEP 01</div>
+      <h2>REPLICATION</h2>
+      <p>Before a cell divides, every strand of DNA is unzipped by helicase and copied — letter for letter — into two identical helices by DNA polymerase. Errors are under 1 in 10 million.</p>
+    </div></div>
+    <div class="pinned-panel pinned-2"><div class="pinned-inner">
+      <div class="pinned-kicker">STEP 02</div>
+      <h2>TRANSCRIPTION</h2>
+      <p>RNA polymerase binds to a promoter, opens the helix, and transcribes one strand into messenger RNA at about 40 nucleotides per second.</p>
+    </div></div>
+    <div class="pinned-panel pinned-3"><div class="pinned-inner">
+      <div class="pinned-kicker">STEP 03</div>
+      <h2>TRANSPORT</h2>
+      <p>After splicing, capping, and polyadenylation, the mRNA leaves the nucleus through a nuclear pore and travels to a ribosome in the cytoplasm.</p>
+    </div></div>
+    <div class="pinned-panel pinned-4"><div class="pinned-inner">
+      <div class="pinned-kicker">STEP 04</div>
+      <h2>TRANSLATION</h2>
+      <p>The ribosome reads the mRNA in groups of three — codons — and links amino acids into a polypeptide that folds into a finished protein.</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- INTRO / CENTRAL DOGMA -->
+<section class="section section-intro" id="intro">
+  <div class="container">
+    <div class="split">
+      <div class="split-text reveal">
+        <span class="section-kicker">01 · THE CENTRAL DOGMA</span>
+        <h2 class="section-heading">Information <em>flows</em> from DNA to RNA to Protein.</h2>
+        <p>First proposed by Francis Crick in 1958, the central dogma is the master blueprint every living cell follows. DNA is the archive — a stable, two-strand library of instructions. RNA is the messenger — a disposable, single-strand copy. Protein is the machine — the shape-shifter that does almost every job in the cell.</p>
+        <p>Each step is catalyzed by specialized enzymes. Each step has quality control. Each step can fail — and when it does, the cell has repair systems to clean up the mess. In this game, you operate every stage of the pipeline yourself.</p>
+        <p><strong>Fun fact:</strong> A single cell does enough transcription every minute to build a library equal to the works of Shakespeare.</p>
       </div>
-      <div class="pinned-panel pinned-2">
-        <div class="pinned-inner">
-          <div class="pinned-kicker">STEP 02</div>
-          <h2>Transcription</h2>
-          <p>RNA polymerase opens the helix at a promoter and transcribes one strand into messenger RNA.</p>
-        </div>
+      <div class="dogma-flow reveal">
+        <div class="dogma-node dogma-dna"><span>DNA</span></div>
+        <svg class="dogma-arrow" viewBox="0 0 200 40"><path d="M5 20 L 180 20" stroke-width="3"/><polygon points="180,10 195,20 180,30"/></svg>
+        <div class="dogma-node dogma-rna"><span>RNA</span></div>
+        <svg class="dogma-arrow" viewBox="0 0 200 40"><path d="M5 20 L 180 20" stroke-width="3"/><polygon points="180,10 195,20 180,30"/></svg>
+        <div class="dogma-node dogma-protein"><span>PROTEIN</span></div>
       </div>
-      <div class="pinned-panel pinned-3">
-        <div class="pinned-inner">
-          <div class="pinned-kicker">STEP 03</div>
-          <h2>Transport</h2>
-          <p>The mRNA leaves the nucleus through a pore and travels through the cytoplasm to a ribosome.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DNA -->
+<section class="section section-dna" id="dna">
+  <div class="parallax-bg"></div>
+  <div class="container">
+    <span class="section-kicker reveal">02 · LEVEL 1 — DNA BUILDING</span>
+    <h2 class="section-heading reveal">Two strands. One zipper of hydrogen bonds.</h2>
+    <div class="split">
+      <div class="split-text reveal">
+        <p>DNA is a double helix. Each rung of the ladder is a pair of bases held together by hydrogen bonds: <strong>A</strong> pairs with <strong>T</strong> using two hydrogen bonds, and <strong>C</strong> pairs with <strong>G</strong> using three. That extra bond makes C-G pairs stronger — regions of DNA rich in C and G are harder to unzip.</p>
+        <p>The two strands run <em>antiparallel</em>: one goes 5' to 3', the other 3' to 5'. The sugar-phosphate backbone wraps around the outside while the bases face inward, hidden from water. One full twist of the helix is about 10.5 base pairs.</p>
+        <p>In Level 1, a template strand appears on the left. Your job: place the complementary base on the right. Three mutations and the strand collapses — your cell takes damage.</p>
+        <div class="pair-rule">
+          <div class="pair-rule-row"><span class="pill pill-A">A</span>—<span class="pill pill-T">T</span></div>
+          <div class="pair-rule-row"><span class="pill pill-C">C</span>—<span class="pill pill-G">G</span></div>
         </div>
+        <ul class="fact-list">
+          <li><span class="fact-num">3.2B</span> base pairs in the human genome</li>
+          <li><span class="fact-num">2m</span> of DNA coiled inside each cell</li>
+          <li><span class="fact-num">46</span> chromosomes in every human cell</li>
+          <li><span class="fact-num">10.5</span> base pairs per turn of the helix</li>
+        </ul>
       </div>
-      <div class="pinned-panel pinned-4">
-        <div class="pinned-inner">
-          <div class="pinned-kicker">STEP 04</div>
-          <h2>Translation</h2>
-          <p>The ribosome reads codons three letters at a time, assembling amino acids into a finished protein.</p>
+      <div class="dna-demo reveal">
+        <div class="helix-demo" id="helix-demo"></div>
+        <p class="caption">Hover any rung — the hydrogen bond glows.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSCRIPTION -->
+<section class="section section-transcription" id="transcription">
+  <div class="container">
+    <span class="section-kicker reveal">03 · LEVEL 2 — TRANSCRIPTION</span>
+    <h2 class="section-heading reveal">Copy the code into a portable message.</h2>
+    <div class="split reverse">
+      <div class="poly-demo reveal">
+        <div class="poly-track">
+          <div class="poly-promoter">PROMOTER</div>
+          <div class="poly-droplet" id="poly-droplet"></div>
+          <div class="poly-strand"></div>
+        </div>
+        <p class="caption">Click anywhere in the track when the droplet is over the promoter.</p>
+      </div>
+      <div class="split-text reveal">
+        <p>DNA never leaves the nucleus — it's too precious to risk. Instead, an enzyme called <strong>RNA polymerase</strong> binds a sequence called the <em>promoter</em>, unzips the double helix, and reads one strand letter by letter, building a complementary strand of <strong>messenger RNA</strong>.</p>
+        <p>RNA differs from DNA in three ways: it is single-stranded, it uses the sugar ribose instead of deoxyribose, and it uses uracil (U) instead of thymine (T). Otherwise the pairing rules are the same — A to U, C to G.</p>
+        <p>In eukaryotes the raw transcript (pre-mRNA) is then modified: a 5' cap is added for stability, introns are spliced out, and a poly-A tail of 200+ adenines is attached to the 3' end. Only then is the mRNA export-ready.</p>
+        <p>In Level 2, the polymerase droplet bounces across the screen. Land it on the promoter three times to finish transcription. Miss too often and the cell shuts transcription down.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- mRNA MAZE -->
+<section class="section section-maze" id="maze">
+  <div class="container">
+    <span class="section-kicker reveal">04 · LEVEL 3 — mRNA MAZE</span>
+    <h2 class="section-heading reveal">A dangerous journey through the cytoplasm.</h2>
+    <div class="split">
+      <div class="split-text reveal">
+        <p>Once mRNA is made, it has to travel from the nucleus, out through a <strong>nuclear pore complex</strong> (each cell has thousands of these gates), and across the cytoplasm to a <strong>ribosome</strong>. Along the way it faces enemies — enzymes called RNases that shred unprotected RNA — and it needs <strong>ATP</strong> energy to keep moving.</p>
+        <p>The 5' cap and poly-A tail aren't just decoration. They physically protect the ends of the message from enzymes, buying enough time to be translated. Typical mRNA lifespan in a human cell is minutes to hours.</p>
+        <p>In Level 3 you steer the mRNA through a maze. Dodge enzyme hazards, collect ATP energy packets, and reach the ribosome before your timer — or your cell health — runs out.</p>
+      </div>
+      <div class="maze-demo reveal">
+        <div class="maze-grid" id="maze-grid"></div>
+        <p class="caption">Purple = mRNA · Red = enzyme · Yellow = energy · Green = ribosome</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSLATION -->
+<section class="section section-translation" id="translation">
+  <div class="container">
+    <span class="section-kicker reveal">05 · LEVEL 4 — TRANSLATION</span>
+    <h2 class="section-heading reveal">Read the code, three letters at a time.</h2>
+
+    <p class="section-lead reveal">The ribosome reads mRNA in groups of three nucleotides — <strong>codons</strong>. Each codon specifies one amino acid. With 4 letters in 3 positions, there are 64 possible codons to code for 20 amino acids plus start and stop signals. <strong>AUG</strong> is the universal start codon (also codes for methionine). <strong>UAA, UAG, UGA</strong> are stop codons — they terminate translation.</p>
+
+    <div class="codon-demo reveal">
+      <div class="codon-track">
+        <div class="codon-cell color-A">A</div>
+        <div class="codon-cell color-U">U</div>
+        <div class="codon-cell color-G">G</div>
+      </div>
+      <div class="codon-arrow">↓</div>
+      <div class="amino-options">
+        <div class="amino-card amino-correct" data-correct>Methionine (Met) — START</div>
+        <div class="amino-card">Leucine (Leu)</div>
+        <div class="amino-card">Valine (Val)</div>
+      </div>
+      <p class="caption">Click the correct amino acid for this codon.</p>
+    </div>
+
+    <div class="codon-chart reveal">
+      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-a)">A</span><span style="background:var(--c-u)">U</span><span style="background:var(--c-g);color:#000">G</span></div> Met · START</div>
+      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-u)">U</span><span style="background:var(--c-u)">U</span><span style="background:var(--c-u)">U</span></div> Phe</div>
+      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-c);color:#000">C</span><span style="background:var(--c-a)">A</span><span style="background:var(--c-u)">U</span></div> His</div>
+      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-g);color:#000">G</span><span style="background:var(--c-c);color:#000">C</span><span style="background:var(--c-a)">A</span></div> Ala</div>
+      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-u)">U</span><span style="background:var(--c-a)">A</span><span style="background:var(--c-c);color:#000">C</span></div> Tyr</div>
+      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-u)">U</span><span style="background:var(--c-a)">A</span><span style="background:var(--c-a)">A</span></div> STOP</div>
+      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-u)">U</span><span style="background:var(--c-a)">A</span><span style="background:var(--c-g);color:#000">G</span></div> STOP</div>
+      <div class="codon-row"><div class="mini-codon"><span style="background:var(--c-u)">U</span><span style="background:var(--c-g);color:#000">G</span><span style="background:var(--c-a)">A</span></div> STOP</div>
+    </div>
+  </div>
+</section>
+
+<!-- MUTATIONS -->
+<section class="section section-mutations" id="mutations">
+  <div class="container">
+    <span class="section-kicker reveal">06 · WHEN THINGS GO WRONG</span>
+    <h2 class="section-heading reveal">Every mistake has a biological cost.</h2>
+    <p class="section-lead reveal">All four levels feed into one shared <strong>Cell Health</strong> bar. Each mistake type maps to a real biological failure mode:</p>
+    <div class="mut-grid">
+      <div class="mut-card reveal">
+        <h3>POINT MUTATION</h3>
+        <p>One base swapped for another. If a purine swaps for a pyrimidine, the mutation is a transversion; otherwise a transition. Most are silent, but some change the amino acid and break the protein.</p>
+      </div>
+      <div class="mut-card reveal">
+        <h3>MISSENSE</h3>
+        <p>A codon change produces a different amino acid. Sometimes harmless, sometimes devastating — sickle cell anemia is a single A→T substitution in hemoglobin.</p>
+      </div>
+      <div class="mut-card reveal">
+        <h3>NONSENSE</h3>
+        <p>A codon changes into a premature stop codon. Translation halts early, producing a truncated, usually nonfunctional protein.</p>
+      </div>
+      <div class="mut-card reveal">
+        <h3>FRAMESHIFT</h3>
+        <p>An insertion or deletion shifts the reading frame. Every codon downstream is rewritten — usually catastrophic.</p>
+      </div>
+      <div class="mut-card reveal">
+        <h3>FAILED TRANSCRIPTION</h3>
+        <p>RNA polymerase binds the wrong promoter or produces a faulty transcript. The cell wastes resources and may enter stress response.</p>
+      </div>
+      <div class="mut-card reveal">
+        <h3>mRNA DEGRADATION</h3>
+        <p>RNases chew up unprotected message before it reaches a ribosome. No mRNA, no protein, no function.</p>
+      </div>
+      <div class="mut-card reveal">
+        <h3>MISFOLDED PROTEIN</h3>
+        <p>Wrong amino acid sequence, wrong 3D shape, wrong job. Some misfolded proteins (prions) even corrupt neighbors.</p>
+      </div>
+      <div class="mut-card reveal">
+        <h3>CELL DEATH</h3>
+        <p>If errors pile up faster than repair enzymes can fix them, the cell triggers apoptosis — programmed self-destruction.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HEALTH -->
+<section class="section section-health">
+  <div class="container">
+    <span class="section-kicker reveal">07 · THE CELL HEALTH BAR</span>
+    <h2 class="section-heading reveal">One unified stakes system across all four levels.</h2>
+    <div class="health-visual reveal">
+      <div class="cell-org">
+        <div class="cell-nucleus"></div>
+      </div>
+      <div class="health-bar-wrap">
+        <div class="health-bar" id="demo-health"><div class="health-bar-fill"></div></div>
+        <div class="health-bar-label">CELL HEALTH: <span id="health-num">100</span>%</div>
+        <div class="health-buttons">
+          <button id="damage-btn" class="btn btn-small">INFLICT MUTATION (-15)</button>
+          <button id="heal-btn" class="btn btn-small">REPAIR DNA (+10)</button>
         </div>
       </div>
     </div>
-  </section>
+    <p class="section-lead reveal" style="margin-top: 2rem;">Mutations in Level 1, missed promoters in Level 2, enzyme hits in Level 3, and wrong amino acids in Level 4 all drain the same cell-health bar. Hit zero and the cell dies — game over, dissolve effect, death melody. Recover health by reaching new levels or collecting ATP energy in the maze.</p>
+  </div>
+</section>
 
-  <!-- ============ INTRO / CENTRAL DOGMA ============ -->
-  <section class="section section-intro" id="intro">
-    <div class="container">
-      <div class="split">
-        <div class="split-text reveal">
-          <span class="section-kicker">01 · THE CENTRAL DOGMA</span>
-          <h2 class="section-heading split-heading" data-split>Information flows from DNA to RNA to Protein.</h2>
-          <p>First described by Francis Crick in 1958, the central dogma is the blueprint every living cell follows. DNA is the archive. RNA is the messenger. Protein is the machine that gets the work done.</p>
-          <p>In this game you rebuild that pipeline by hand — matching base pairs, landing an RNA polymerase, guiding mRNA through the cytoplasm, and decoding codons into amino acids.</p>
-        </div>
-        <div class="dogma-flow reveal">
-          <div class="dogma-node dogma-dna"><span>DNA</span></div>
-          <svg class="dogma-arrow" viewBox="0 0 200 40"><path d="M5 20 L 180 20" stroke-width="3"/><polygon points="180,10 195,20 180,30"/></svg>
-          <div class="dogma-node dogma-rna"><span>RNA</span></div>
-          <svg class="dogma-arrow" viewBox="0 0 200 40"><path d="M5 20 L 180 20" stroke-width="3"/><polygon points="180,10 195,20 180,30"/></svg>
-          <div class="dogma-node dogma-protein"><span>PROTEIN</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
+<!-- PLAY -->
+<section class="section section-play" id="play">
+  <div class="container">
+    <h2 class="section-heading reveal">Ready to play?</h2>
+    <p class="section-lead reveal">The game runs on <strong>Microsoft MakeCode Arcade</strong> — free, browser-based, no account required. Open the link below, switch the editor to Python, and paste in <code>dna_game.py</code>.</p>
 
-  <!-- ============ DNA SECTION ============ -->
-  <section class="section section-dna" id="dna">
-    <div class="parallax-bg"></div>
-    <div class="container">
-      <span class="section-kicker reveal">02 · LEVEL 1 — DNA BUILDING</span>
-      <h2 class="section-heading reveal split-heading" data-split>Two strands. One zipper of hydrogen bonds.</h2>
-
-      <div class="split">
-        <div class="split-text reveal">
-          <p>DNA is a double helix. Each rung of the ladder is a pair of bases held together by hydrogen bonds — <strong>A</strong> always pairs with <strong>T</strong>, and <strong>C</strong> always pairs with <strong>G</strong>. This rule is how genetic information is copied faithfully every time a cell divides.</p>
-          <p>In Level 1, a template strand appears on the left. Your job is to place the complementary base on the right. Three mutations and the strand collapses — your cell takes damage.</p>
-          <div class="pair-rule">
-            <div class="pair-rule-row"><span class="pill pill-A">A</span>—<span class="pill pill-T">T</span></div>
-            <div class="pair-rule-row"><span class="pill pill-C">C</span>—<span class="pill pill-G">G</span></div>
-          </div>
-        </div>
-        <div class="dna-demo reveal">
-          <div class="helix-demo" id="helix-demo"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ TRANSCRIPTION ============ -->
-  <section class="section section-transcription" id="transcription">
-    <div class="container">
-      <span class="section-kicker reveal">03 · LEVEL 2 — TRANSCRIPTION</span>
-      <h2 class="section-heading reveal split-heading" data-split>Copy the code into a portable message.</h2>
-
-      <div class="split reverse">
-        <div class="poly-demo reveal">
-          <div class="poly-track">
-            <div class="poly-promoter">PROMOTER</div>
-            <div class="poly-droplet" id="poly-droplet"></div>
-            <div class="poly-strand"></div>
-          </div>
-          <p class="caption">Click anywhere in the track when the droplet is over the promoter.</p>
-        </div>
-        <div class="split-text reveal">
-          <p>DNA never leaves the nucleus — it's too precious. Instead, <strong>RNA polymerase</strong> binds to a region called the <em>promoter</em>, unzips the double helix, and copies one strand into <strong>messenger RNA</strong>.</p>
-          <p>In Level 2, the polymerase droplet bounces across the screen. Land it on the promoter three times to finish transcription. Miss too often and the cell shuts transcription down.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ mRNA MAZE ============ -->
-  <section class="section section-maze" id="maze">
-    <div class="container">
-      <span class="section-kicker reveal">04 · LEVEL 3 — mRNA MAZE</span>
-      <h2 class="section-heading reveal split-heading" data-split>Reach the ribosome before you degrade.</h2>
-
-      <div class="split">
-        <div class="split-text reveal">
-          <p>Once mRNA is made, it has to travel from the nucleus, out through a nuclear pore, and across the cytoplasm to a <strong>ribosome</strong>. Hungry enzymes (RNases) can shred it on the way, and it needs ATP energy to keep moving.</p>
-          <p>In Level 3 you steer the mRNA through a maze. Dodge enzymes, collect glowing energy packets, and reach the ribosome before your timer — or your cell health — runs out.</p>
-        </div>
-        <div class="maze-demo reveal">
-          <div class="maze-grid" id="maze-grid"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ TRANSLATION ============ -->
-  <section class="section section-translation" id="translation">
-    <div class="container">
-      <span class="section-kicker reveal">05 · LEVEL 4 — TRANSLATION</span>
-      <h2 class="section-heading reveal split-heading" data-split>Read the code, three letters at a time.</h2>
-
-      <p class="section-lead reveal">The ribosome reads mRNA in groups of three nucleotides called <strong>codons</strong>. Each codon specifies exactly one amino acid. Chain enough amino acids together and you have a <strong>protein</strong> — the molecular machines that run every process in your body.</p>
-
-      <div class="codon-demo reveal">
-        <div class="codon-track">
-          <div class="codon-cell color-A">A</div>
-          <div class="codon-cell color-U">U</div>
-          <div class="codon-cell color-G">G</div>
-        </div>
-        <div class="codon-arrow">↓</div>
-        <div class="amino-options">
-          <div class="amino-card amino-correct" data-correct>Methionine (Met)</div>
-          <div class="amino-card">Leucine (Leu)</div>
-          <div class="amino-card">Valine (Val)</div>
-        </div>
-        <p class="caption">Click the correct amino acid for this codon.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ CELL HEALTH ============ -->
-  <section class="section section-health">
-    <div class="container">
-      <span class="section-kicker reveal">06 · THE CELL HEALTH BAR</span>
-      <h2 class="section-heading reveal split-heading" data-split>One unified stakes system across all four levels.</h2>
-      <div class="health-visual reveal">
-        <div class="cell-org">
-          <div class="cell-nucleus"></div>
-        </div>
-        <div class="health-bar-wrap">
-          <div class="health-bar" id="demo-health"><div class="health-bar-fill"></div></div>
-          <div class="health-bar-label">CELL HEALTH: <span id="health-num">100</span>%</div>
-          <div class="health-buttons">
-            <button id="damage-btn" class="btn btn-small">INFLICT MUTATION (-15)</button>
-            <button id="heal-btn" class="btn btn-small">REPAIR DNA (+10)</button>
-          </div>
-        </div>
-      </div>
-      <p class="section-lead reveal">Mutations, failed transcription, degraded mRNA, and misfolded proteins all drain the same cell-health bar. Hit zero and the cell dies.</p>
-    </div>
-  </section>
-
-  <!-- ============ PLAY SECTION ============ -->
-  <section class="section section-play" id="play">
-    <div class="container">
-      <h2 class="section-heading reveal split-heading" data-split>Ready to play?</h2>
-      <p class="section-lead reveal">The game runs on <strong>Microsoft MakeCode Arcade</strong>. Open the link below, switch the editor to Python, and paste in <code>dna_game.py</code>.</p>
-
-      <div class="play-card reveal">
-        <div class="play-card-inner">
-          <div class="play-controls">
-            <div class="gamepad">
-              <div class="dpad">
-                <div class="dpad-btn up">▲</div>
-                <div class="dpad-btn left">◀</div>
-                <div class="dpad-btn center"></div>
-                <div class="dpad-btn right">▶</div>
-                <div class="dpad-btn down">▼</div>
-              </div>
-              <div class="ab">
-                <div class="btn-a">A</div>
-                <div class="btn-b">B</div>
-              </div>
+    <div class="play-card reveal">
+      <div class="play-card-inner">
+        <div class="play-controls">
+          <div class="gamepad">
+            <div class="dpad">
+              <div class="dpad-btn up">▲</div>
+              <div class="dpad-btn left">◀</div>
+              <div class="dpad-btn center"></div>
+              <div class="dpad-btn right">▶</div>
+              <div class="dpad-btn down">▼</div>
             </div>
-            <ul class="controls-list">
-              <li><strong>◀ / ▶</strong> navigate</li>
-              <li><strong>A</strong> cycle / confirm</li>
-              <li><strong>B</strong> place base pair</li>
-            </ul>
+            <div class="ab">
+              <div class="btn-a">A</div>
+              <div class="btn-b">B</div>
+            </div>
           </div>
-          <div class="play-links">
-            <a class="btn btn-primary btn-big" href="https://arcade.makecode.com/" target="_blank" rel="noopener">OPEN MAKECODE ARCADE ↗</a>
-            <a class="btn btn-ghost btn-big" href="dna_game.py" download>DOWNLOAD dna_game.py</a>
-            <ol class="install-steps">
-              <li>Go to <strong>arcade.makecode.com</strong> and click <em>New Project</em>.</li>
-              <li>Top-right, switch the editor from <em>Blocks</em> to <em>Python</em>.</li>
-              <li>Paste the entire contents of <code>dna_game.py</code>.</li>
-              <li>Press the green play button. Enjoy!</li>
-            </ol>
-          </div>
+          <ul class="controls-list">
+            <li><strong>◀ / ▶</strong> navigate options / slots</li>
+            <li><strong>▲ / ▼</strong> move mRNA in maze</li>
+            <li><strong>A</strong> cycle base / confirm / drop polymerase</li>
+            <li><strong>B</strong> place base pair</li>
+          </ul>
+        </div>
+        <div class="play-links">
+          <a class="btn btn-primary btn-big" href="https://arcade.makecode.com/" target="_blank" rel="noopener">OPEN MAKECODE ARCADE ↗</a>
+          <a class="btn btn-ghost btn-big" href="dna_game.py" download>DOWNLOAD dna_game.py</a>
+          <ol class="install-steps">
+            <li>Go to <strong>arcade.makecode.com</strong> and click <em>New Project</em>.</li>
+            <li>Top-right, switch the editor from <em>Blocks</em> to <em>Python</em>.</li>
+            <li>Paste the entire contents of <code>dna_game.py</code>.</li>
+            <li>Press the green play button. Enjoy!</li>
+          </ol>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ============ FOOTER ============ -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-dna">
-        <div class="footer-strand"></div>
-        <div class="footer-strand"></div>
-      </div>
-      <div class="footer-brand">CELL STUDIO</div>
-      <p>Interactive biology for curious humans.</p>
-      <p class="footer-small">A → T · C → G · U → A. The code is universal.</p>
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-dna">
+      <div class="footer-strand"></div>
+      <div class="footer-strand"></div>
     </div>
-  </footer>
+    <div class="footer-brand">CELL STUDIO</div>
+    <p>Interactive biology for curious humans.</p>
+    <p class="footer-small">A → T · C → G · U → A. The code is universal.</p>
+  </div>
+</footer>
 
-  <script src="script.js"></script>
+<script>
+/* ============================================================
+   CELL STUDIO — INTERACTIVITY
+   ============================================================ */
+
+/* 0. AUDIO */
+const Sound = (() => {
+  let ctx = null, enabled = true;
+  function ensure() {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+  }
+  function tone(freq, duration = 0.12, type = 'square', volume = 0.05) {
+    if (!enabled) return; ensure(); if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.value = freq; g.gain.value = volume;
+    o.connect(g).connect(ctx.destination);
+    const now = ctx.currentTime;
+    g.gain.setValueAtTime(volume, now);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    o.start(now); o.stop(now + duration);
+  }
+  function sequence(notes, gap = 0.1, type = 'square') {
+    if (!enabled) return;
+    notes.forEach((n, i) => setTimeout(() => tone(n, gap * 0.9, type), i * gap * 1000));
+  }
+  return {
+    click:   () => tone(880, 0.05, 'square', 0.03),
+    correct: () => sequence([523, 659, 784], 0.1, 'triangle'),
+    wrong:   () => sequence([196, 147], 0.13, 'sawtooth'),
+    bond:    () => tone(1046, 0.08, 'sine', 0.04),
+    energy:  () => tone(1318, 0.1, 'triangle', 0.04),
+    whoosh:  () => tone(220, 0.2, 'sine', 0.03),
+    levelup: () => sequence([523, 659, 784, 1046], 0.09, 'triangle'),
+    glitch:  () => tone(200 + Math.random() * 800, 0.03, 'square', 0.02),
+    letterA: () => tone(440, 0.08, 'square', 0.04),
+    letterT: () => tone(523, 0.08, 'square', 0.04),
+    letterC: () => tone(659, 0.08, 'square', 0.04),
+    letterG: () => tone(784, 0.08, 'square', 0.04),
+    letterU: () => tone(880, 0.08, 'square', 0.04),
+    toggle(s) { enabled = s; },
+    isEnabled: () => enabled
+  };
+})();
+
+/* 1. LOADER */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('done');
+    Sound.levelup();
+  }, 1400);
+});
+
+/* 2. SOUND TOGGLE */
+const soundBtn = document.getElementById('sound-toggle');
+const soundLabel = document.getElementById('sound-label');
+const soundIcon = document.getElementById('sound-icon');
+let soundOn = true;
+soundBtn.addEventListener('click', () => {
+  soundOn = !soundOn;
+  Sound.toggle(soundOn);
+  soundLabel.textContent = 'SOUND ' + (soundOn ? 'ON' : 'OFF');
+  soundIcon.textContent = soundOn ? '♪' : '♫';
+  if (soundOn) Sound.click();
+});
+document.addEventListener('click', () => Sound.click(), { once: true });
+
+/* 3. SCROLL PROGRESS */
+const progress = document.getElementById('scroll-progress');
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  progress.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100 + '%';
+});
+
+/* 4. MINIMAL CURSOR SPOT */
+const spot = document.getElementById('cursor-spot');
+document.addEventListener('mousemove', e => {
+  spot.style.left = e.clientX + 'px';
+  spot.style.top  = e.clientY + 'px';
+});
+document.querySelectorAll('a, button, .amino-card, .letter-cell, .dpad-btn, .btn-a, .btn-b, .helix-base, .mut-card, .stat, .title-word').forEach(el => {
+  el.addEventListener('mouseenter', () => spot.classList.add('active'));
+  el.addEventListener('mouseleave', () => spot.classList.remove('active'));
+});
+
+/* 5. PARTICLES */
+const particlesRoot = document.getElementById('particles');
+const palette = { A: '#ff3b4c', T: '#3277ff', C: '#30d68a', G: '#ffd23b', U: '#b44dff' };
+function spawnParticle() {
+  const letters = Object.keys(palette);
+  const l = letters[Math.floor(Math.random() * letters.length)];
+  const el = document.createElement('div');
+  el.className = 'particle';
+  el.textContent = l;
+  el.style.color = palette[l];
+  el.style.left = Math.random() * 100 + '%';
+  el.style.fontSize = (10 + Math.random() * 18) + 'px';
+  el.style.animationDuration = (14 + Math.random() * 20) + 's';
+  el.style.animationDelay = (-Math.random() * 20) + 's';
+  particlesRoot.appendChild(el);
+  setTimeout(() => el.remove(), 35000);
+}
+for (let i = 0; i < 35; i++) spawnParticle();
+setInterval(spawnParticle, 1000);
+
+/* 6. THREE.JS 3D DNA */
+(function initThreeDNA() {
+  const mount = document.getElementById('three-dna');
+  if (!mount || typeof THREE === 'undefined') return;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x05060d, 40, 140);
+  const camera = new THREE.PerspectiveCamera(55, mount.clientWidth / mount.clientHeight, 0.1, 500);
+  camera.position.set(0, 0, 55);
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(mount.clientWidth, mount.clientHeight);
+  renderer.setClearColor(0x000000, 0);
+  mount.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0x8899ff, 0.6));
+  const dir1 = new THREE.DirectionalLight(0xffffff, 0.8); dir1.position.set(20, 20, 30); scene.add(dir1);
+  const pl1 = new THREE.PointLight(0x7cf9ff, 1.2, 120); pl1.position.set(-20, 10, 10); scene.add(pl1);
+  const pl2 = new THREE.PointLight(0xb44dff, 1.0, 120); pl2.position.set(20, -20, 10); scene.add(pl2);
+
+  const dna = new THREE.Group();
+  scene.add(dna);
+
+  const PAIR_COUNT = 70, HELIX_RADIUS = 6, PAIR_SPACING = 1.4, TWIST = Math.PI / 5;
+  const totalHeight = PAIR_COUNT * PAIR_SPACING;
+  const colors = { A: 0xff3b4c, T: 0x3277ff, C: 0x30d68a, G: 0xffd23b };
+  const pairs = [['A','T'], ['G','C'], ['T','A'], ['C','G'], ['A','T'], ['T','A'], ['G','C'], ['C','G']];
+
+  const sphereGeo = new THREE.SphereGeometry(0.9, 20, 16);
+  const backboneGeo = new THREE.SphereGeometry(0.35, 12, 10);
+  const rungGeo = new THREE.CylinderGeometry(0.1, 0.1, HELIX_RADIUS * 2 - 1.8, 8);
+  rungGeo.rotateZ(Math.PI / 2);
+
+  for (let i = 0; i < PAIR_COUNT; i++) {
+    const y = -totalHeight / 2 + i * PAIR_SPACING;
+    const angle = i * TWIST;
+    const [b1, b2] = pairs[i % pairs.length];
+
+    const rung = new THREE.Mesh(rungGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, emissive: 0xffffff, emissiveIntensity: 0.1 }));
+    rung.position.set(0, y, 0); rung.rotation.y = angle;
+    dna.add(rung);
+
+    const mat1 = new THREE.MeshStandardMaterial({ color: colors[b1], emissive: colors[b1], emissiveIntensity: 0.6, roughness: 0.35, metalness: 0.1 });
+    const base1 = new THREE.Mesh(sphereGeo, mat1);
+    base1.position.set(Math.cos(angle) * HELIX_RADIUS, y, Math.sin(angle) * HELIX_RADIUS);
+    dna.add(base1);
+
+    const mat2 = new THREE.MeshStandardMaterial({ color: colors[b2], emissive: colors[b2], emissiveIntensity: 0.6, roughness: 0.35, metalness: 0.1 });
+    const base2 = new THREE.Mesh(sphereGeo, mat2);
+    base2.position.set(-Math.cos(angle) * HELIX_RADIUS, y, -Math.sin(angle) * HELIX_RADIUS);
+    dna.add(base2);
+
+    if (i > 0) {
+      const prev = (i - 1) * TWIST;
+      const prevY = y - PAIR_SPACING;
+      for (let t = 0; t < 6; t++) {
+        const f = t / 6;
+        const a = prev + (angle - prev) * f;
+        const yy = prevY + PAIR_SPACING * f;
+        const m = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x444488, emissiveIntensity: 0.3, transparent: true, opacity: 0.5 });
+        const bead1 = new THREE.Mesh(backboneGeo, m);
+        bead1.position.set(Math.cos(a) * HELIX_RADIUS, yy, Math.sin(a) * HELIX_RADIUS);
+        dna.add(bead1);
+        const bead2 = new THREE.Mesh(backboneGeo, m);
+        bead2.position.set(-Math.cos(a) * HELIX_RADIUS, yy, -Math.sin(a) * HELIX_RADIUS);
+        dna.add(bead2);
+      }
+    }
+  }
+
+  // Floating free nucleotides
+  const floaters = [];
+  for (let i = 0; i < 24; i++) {
+    const letters = Object.keys(colors);
+    const l = letters[Math.floor(Math.random() * letters.length)];
+    const mat = new THREE.MeshStandardMaterial({ color: colors[l], emissive: colors[l], emissiveIntensity: 0.8, transparent: true, opacity: 0.8 });
+    const s = new THREE.Mesh(new THREE.SphereGeometry(0.5 + Math.random() * 0.6, 12, 10), mat);
+    s.position.set((Math.random() - 0.5) * 80, (Math.random() - 0.5) * totalHeight, (Math.random() - 0.5) * 40 - 20);
+    s.userData = { vy: (Math.random() - 0.5) * 0.03, vx: (Math.random() - 0.5) * 0.02 };
+    scene.add(s); floaters.push(s);
+  }
+
+  window.addEventListener('resize', () => {
+    camera.aspect = mount.clientWidth / mount.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(mount.clientWidth, mount.clientHeight);
+  });
+
+  let mx = 0, my = 0, lastScroll = 0;
+  window.addEventListener('mousemove', e => {
+    mx = (e.clientX / window.innerWidth - 0.5) * 2;
+    my = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+  window.addEventListener('scroll', () => { lastScroll = window.scrollY; });
+
+  const clock = new THREE.Clock();
+  function animate() {
+    const dt = clock.getDelta();
+    const t = clock.getElapsedTime();
+    dna.rotation.y += dt * 0.3;
+    dna.rotation.y += lastScroll * 0.00005;
+    dna.position.y = Math.sin(t * 0.6) * 0.6;
+    dna.rotation.z = mx * 0.15;
+    dna.rotation.x = my * 0.1;
+    floaters.forEach(f => {
+      f.position.y += f.userData.vy;
+      f.position.x += f.userData.vx;
+      if (f.position.y > totalHeight / 2) f.position.y = -totalHeight / 2;
+      if (f.position.y < -totalHeight / 2) f.position.y = totalHeight / 2;
+    });
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+/* 7. REVEAL + count-up trigger */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      if (e.target.classList.contains('section-heading')) Sound.whoosh();
+      if (e.target.classList.contains('stat')) startCount(e.target);
+    }
+  });
+}, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* 8. COUNT-UP */
+const counted = new WeakSet();
+function startCount(stat) {
+  if (counted.has(stat)) return;
+  counted.add(stat);
+  const numEl = stat.querySelector('.stat-num');
+  if (!numEl) return;
+  const target = parseInt(numEl.dataset.count, 10);
+  const duration = 1600;
+  const start = performance.now();
+  function fmt(v) {
+    if (target >= 1e9) return (v / 1e9).toFixed(1) + 'B';
+    if (target >= 1e6) return (v / 1e6).toFixed(0) + 'M';
+    if (target >= 1e3) return v.toLocaleString();
+    return v.toString();
+  }
+  function tick(now) {
+    const p = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - p, 3);
+    numEl.textContent = fmt(Math.floor(eased * target));
+    if (p < 1) requestAnimationFrame(tick);
+    else numEl.textContent = fmt(target);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* 9. NAVBAR */
+const navbar = document.querySelector('.navbar');
+window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 40));
+
+/* 10. PARALLAX */
+const parallax = document.querySelector('.parallax-bg');
+window.addEventListener('scroll', () => {
+  if (!parallax) return;
+  const rect = parallax.getBoundingClientRect();
+  parallax.style.transform = `translateY(${(rect.top - innerHeight / 2) * 0.25}px)`;
+});
+
+/* 11. LETTER GRID — all letters glitch on hover */
+(function buildLetterGrid() {
+  const grid = document.getElementById('letter-grid');
+  const letters = ['A', 'T', 'C', 'G', 'U'];
+  const cols = 16, rows = 6;
+
+  function glitchCell(cell, origLetter) {
+    if (cell.dataset.glitching === '1') return;
+    cell.dataset.glitching = '1';
+    cell.classList.add('glitching');
+    let i = 0;
+    const iv = setInterval(() => {
+      cell.textContent = letters[Math.floor(Math.random() * letters.length)];
+      Sound.glitch();
+      i++;
+      if (i > 8) {
+        clearInterval(iv);
+        cell.textContent = origLetter;
+        cell.classList.remove('glitching');
+        cell.dataset.glitching = '0';
+      }
+    }, 45);
+  }
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const letter = letters[Math.floor(Math.random() * letters.length)];
+      const cell = document.createElement('div');
+      cell.className = 'letter-cell ' + letter;
+      cell.textContent = letter;
+      cell.style.animationDelay = ((r * cols + c) * 0.015) + 's';
+      cell.addEventListener('mouseenter', () => { glitchCell(cell, letter); Sound['letter' + letter](); });
+      cell.addEventListener('click', () => { Sound.click(); glitchCell(cell, letter); });
+      grid.appendChild(cell);
+    }
+  }
+})();
+
+/* 12. HELIX DEMO */
+(function buildHelixDemo() {
+  const root = document.getElementById('helix-demo');
+  if (!root) return;
+  const seq = ['A','T','G','C','T','A','C','G','A','T','G','C','T','A'];
+  const pair = { A:'T', T:'A', C:'G', G:'C' };
+  seq.forEach((b, i) => {
+    const rung = document.createElement('div');
+    rung.className = 'helix-rung';
+    rung.style.top = (10 + i * 28) + 'px';
+    rung.innerHTML = `
+      <div class="helix-base ${b}">${b}</div>
+      <div class="helix-bond"></div>
+      <div class="helix-base ${pair[b]}">${pair[b]}</div>
+    `;
+    rung.addEventListener('mouseenter', () => Sound.bond());
+    root.appendChild(rung);
+  });
+  window.addEventListener('scroll', () => {
+    const rect = root.getBoundingClientRect();
+    if (rect.bottom < 0 || rect.top > innerHeight) return;
+    const t = (innerHeight - rect.top) / (innerHeight + rect.height);
+    root.querySelectorAll('.helix-rung').forEach((rung, i) => {
+      const phase = i * 0.4 + t * Math.PI * 3;
+      rung.style.transform = `scaleX(${Math.abs(Math.cos(phase)) * 0.7 + 0.3})`;
+    });
+  });
+})();
+
+/* 13. MAZE */
+(function buildMaze() {
+  const maze = document.getElementById('maze-grid');
+  if (!maze) return;
+  const layout = [
+    'M.........',
+    'W.WW.WWWWW',
+    'W..W..E..W',
+    '.EW.WWWW.W',
+    '.$W......W',
+    '.W.WWWWW.W',
+    '.W.W.E.W.W',
+    '.W.W.$.W.W',
+    '.W.WWW.W..',
+    '.........G'
+  ];
+  for (let r = 0; r < 10; r++) {
+    for (let c = 0; c < 10; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'maze-cell';
+      const ch = layout[r][c];
+      if (ch === 'W') cell.classList.add('wall');
+      if (ch === 'E') cell.classList.add('enzyme');
+      if (ch === '$') cell.classList.add('energy');
+      if (ch === 'G') cell.classList.add('goal');
+      if (ch === 'M') cell.classList.add('mrna');
+      maze.appendChild(cell);
+    }
+  }
+  const path = [
+    [0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[2,4],[2,5],[3,5],[3,6],[3,7],
+    [4,7],[5,7],[6,7],[7,7],[8,7],[8,8],[8,9],[9,9]
+  ];
+  let idx = 0;
+  setInterval(() => {
+    maze.querySelectorAll('.mrna').forEach(c => c.classList.remove('mrna'));
+    const [r, c] = path[idx % path.length];
+    const target = maze.children[r * 10 + c];
+    target.classList.add('mrna');
+    idx++;
+    if (target.classList.contains('energy')) Sound.energy();
+  }, 600);
+})();
+
+/* 14. CODON INTERACTION */
+document.querySelectorAll('.amino-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const ok = card.hasAttribute('data-correct');
+    card.classList.remove('correct', 'wrong');
+    void card.offsetWidth;
+    if (ok) { card.classList.add('correct'); Sound.correct(); }
+    else { card.classList.add('wrong'); Sound.wrong(); }
+    setTimeout(() => card.classList.remove('correct', 'wrong'), 600);
+  });
+});
+
+/* 15. HEALTH */
+(function healthDemo() {
+  let health = 100;
+  const fill = document.querySelector('.health-bar-fill');
+  const num = document.getElementById('health-num');
+  const dmg = document.getElementById('damage-btn');
+  const heal = document.getElementById('heal-btn');
+  const cell = document.querySelector('.cell-org');
+  function update() {
+    fill.style.width = health + '%';
+    num.textContent = health;
+    if (health < 30) { cell.style.animationDuration = '0.8s'; cell.style.borderColor = 'var(--c-a)'; }
+    else { cell.style.animationDuration = '3s'; cell.style.borderColor = 'rgba(124, 249, 255, 0.3)'; }
+  }
+  dmg.addEventListener('click', () => {
+    health = Math.max(0, health - 15); update(); Sound.wrong();
+    cell.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1) translateX(-6px)' }, { transform: 'scale(1) translateX(6px)' }, { transform: 'scale(1)' }], { duration: 400 });
+    if (health <= 0) { Sound.whoosh(); setTimeout(() => { health = 100; update(); }, 1000); }
+  });
+  heal.addEventListener('click', () => { health = Math.min(100, health + 10); update(); Sound.correct(); });
+})();
+
+/* 16. TITLE-WORD GLITCH */
+document.querySelectorAll('.title-word').forEach(w => {
+  w.addEventListener('mouseenter', () => {
+    Sound.glitch();
+    const orig = w.textContent;
+    const chars = 'ATCGU';
+    let i = 0;
+    const iv = setInterval(() => {
+      w.textContent = orig.split('').map(c => Math.random() < 0.5 ? chars[Math.floor(Math.random() * 5)] : c).join('');
+      i++;
+      if (i > 6) { clearInterval(iv); w.textContent = orig; }
+    }, 40);
+  });
+});
+
+/* 17. PINNED HORIZONTAL SCROLL */
+(function pinnedScroll() {
+  const section = document.getElementById('pinned');
+  const track = section ? section.querySelector('.pinned-track') : null;
+  if (!section || !track) return;
+  if (window.innerWidth <= 720) return;
+  function onScroll() {
+    const rect = section.getBoundingClientRect();
+    const total = section.offsetHeight - window.innerHeight;
+    if (rect.top > 0) { track.style.transform = 'translateX(0)'; return; }
+    if (rect.bottom < window.innerHeight) { track.style.transform = `translateX(-${300}vw)`; return; }
+    const progress = Math.min(1, Math.max(0, -rect.top / total));
+    track.style.transform = `translateX(-${progress * 300}vw)`;
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+
+/* 18. GAMEPAD SOUNDS */
+document.querySelectorAll('.dpad-btn').forEach(b => b.addEventListener('click', Sound.click));
+document.querySelector('.btn-a').addEventListener('click', () => Sound.correct());
+document.querySelector('.btn-b').addEventListener('click', () => Sound.bond());
+
+/* 19. POLYMERASE CLICK */
+const polyTrack = document.querySelector('.poly-track');
+if (polyTrack) {
+  polyTrack.addEventListener('click', () => {
+    const droplet = document.getElementById('poly-droplet');
+    const dRect = droplet.getBoundingClientRect();
+    const dCenter = dRect.left + dRect.width / 2;
+    const pRect = polyTrack.querySelector('.poly-promoter').getBoundingClientRect();
+    if (dCenter > pRect.left && dCenter < pRect.right) {
+      Sound.correct();
+      droplet.animate([{ transform: 'scale(1)', filter: 'hue-rotate(0deg)' }, { transform: 'scale(2)', filter: 'hue-rotate(180deg)' }, { transform: 'scale(1)', filter: 'hue-rotate(0deg)' }], { duration: 600 });
+    } else Sound.wrong();
+  });
+}
+
+console.log('%cCELL STUDIO — DNA: Code of Life', 'color:#7cf9ff;font-weight:bold;font-size:14px;letter-spacing:4px;');
+</script>
+
 </body>
 </html>
