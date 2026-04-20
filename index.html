@@ -3,23 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DNA · Code of Life — An Educational Biology Game</title>
+  <title>Cell Studio — DNA: Code of Life</title>
+  <meta name="description" content="Cell Studio presents DNA: Code of Life — an educational biology game about the central dogma." />
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-
-  <!-- ============ AUDIO TOGGLE ============ -->
-  <button id="sound-toggle" class="sound-toggle" aria-label="Toggle sound">
-    <span id="sound-icon">♪</span>
-    <span id="sound-label">SOUND: ON</span>
-  </button>
-
-  <!-- ============ CURSOR TRAIL CANVAS ============ -->
-  <canvas id="cursor-trail"></canvas>
-
-  <!-- ============ FLOATING PARTICLES ============ -->
-  <div class="particles" id="particles"></div>
 
   <!-- ============ LOADING SCREEN ============ -->
   <div id="loader" class="loader">
@@ -27,29 +17,52 @@
       <div class="loader-strand"></div>
       <div class="loader-strand"></div>
     </div>
-    <div class="loader-text">DECODING LIFE...</div>
+    <div class="loader-text">CELL STUDIO</div>
+    <div class="loader-sub">Decoding life...</div>
   </div>
 
-  <!-- ============ NAV ============ -->
+  <!-- ============ SOUND TOGGLE ============ -->
+  <button id="sound-toggle" class="sound-toggle" aria-label="Toggle sound">
+    <span id="sound-icon">♪</span>
+    <span id="sound-label">SOUND ON</span>
+  </button>
+
+  <!-- ============ SCROLL PROGRESS BAR ============ -->
+  <div class="scroll-progress" id="scroll-progress"></div>
+
+  <!-- ============ FLOATING PARTICLES ============ -->
+  <div class="particles" id="particles"></div>
+
+  <!-- ============ NAVBAR ============ -->
   <nav class="navbar">
-    <div class="nav-logo">
-      <span class="nav-a">A</span><span class="nav-t">T</span><span class="nav-c">C</span><span class="nav-g">G</span>
-    </div>
+    <a href="#top" class="brand">
+      <div class="brand-mark">
+        <div class="brand-dot"></div>
+        <div class="brand-dot"></div>
+        <div class="brand-dot"></div>
+        <div class="brand-dot"></div>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">CELL STUDIO</span>
+        <span class="brand-tag">Interactive Biology</span>
+      </div>
+    </a>
     <ul class="nav-links">
-      <li><a href="#intro" class="nav-link" data-color="A">About</a></li>
-      <li><a href="#dna" class="nav-link" data-color="T">DNA</a></li>
-      <li><a href="#transcription" class="nav-link" data-color="C">RNA</a></li>
-      <li><a href="#translation" class="nav-link" data-color="G">Protein</a></li>
-      <li><a href="#play" class="nav-link nav-cta" data-color="U">Play</a></li>
+      <li><a href="#intro" class="nav-link">About</a></li>
+      <li><a href="#dna" class="nav-link">DNA</a></li>
+      <li><a href="#transcription" class="nav-link">RNA</a></li>
+      <li><a href="#translation" class="nav-link">Protein</a></li>
+      <li><a href="#play" class="nav-link nav-cta">Play</a></li>
     </ul>
   </nav>
 
   <!-- ============ HERO ============ -->
-  <header class="hero">
+  <header class="hero" id="top">
     <div class="hero-backdrop">
-      <canvas id="dna-canvas"></canvas>
+      <div id="three-dna"></div>
     </div>
     <div class="hero-content">
+      <div class="hero-kicker">CELL STUDIO PRESENTS</div>
       <h1 class="hero-title">
         <span class="title-word" data-text="DNA">DNA</span>
         <span class="title-word title-colon">:</span>
@@ -57,8 +70,7 @@
         <span class="title-word" data-text="OF">OF</span>
         <span class="title-word" data-text="LIFE">LIFE</span>
       </h1>
-      <p class="hero-subtitle">An educational biology game about the central dogma.<br/>
-        Scroll down to learn how life is written, copied, and read.</p>
+      <p class="hero-subtitle">A four-level educational game that walks you through DNA replication, transcription, mRNA transport, and translation.</p>
       <div class="hero-cta">
         <a href="#intro" class="btn btn-primary">BEGIN JOURNEY</a>
         <a href="#play" class="btn btn-ghost">PLAY THE GAME</a>
@@ -67,31 +79,90 @@
     </div>
   </header>
 
-  <!-- ============ LETTER GRID ============ -->
+  <!-- ============ STATS / COUNT-UP ============ -->
+  <section class="section section-stats">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat reveal">
+          <div class="stat-num" data-count="3200000000">0</div>
+          <div class="stat-label">Base pairs in the human genome</div>
+        </div>
+        <div class="stat reveal">
+          <div class="stat-num" data-count="2">0</div>
+          <div class="stat-unit">m</div>
+          <div class="stat-label">DNA coiled inside a single cell</div>
+        </div>
+        <div class="stat reveal">
+          <div class="stat-num" data-count="20">0</div>
+          <div class="stat-label">Amino acids used to build every protein in your body</div>
+        </div>
+        <div class="stat reveal">
+          <div class="stat-num" data-count="4">0</div>
+          <div class="stat-label">Levels in the game — one for each stage of the central dogma</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ LETTER GRID (with hover glitch) ============ -->
   <section class="letter-grid-section" id="grid-section">
     <div class="container">
-      <h2 class="section-title reveal">The Alphabet of Life</h2>
-      <p class="section-lead reveal">Every living thing is written in just four letters.<br/>Each letter has a color. Watch them click into place.</p>
+      <span class="section-kicker reveal">THE ALPHABET</span>
+      <h2 class="section-title reveal">Four letters. One color each. Infinite combinations.</h2>
       <div class="letter-grid" id="letter-grid"></div>
       <div class="legend reveal">
         <div class="legend-item"><span class="swatch swatch-A"></span>Adenine (A) — pairs with T</div>
         <div class="legend-item"><span class="swatch swatch-T"></span>Thymine (T) — pairs with A</div>
         <div class="legend-item"><span class="swatch swatch-C"></span>Cytosine (C) — pairs with G</div>
         <div class="legend-item"><span class="swatch swatch-G"></span>Guanine (G) — pairs with C</div>
-        <div class="legend-item"><span class="swatch swatch-U"></span>Uracil (U) — RNA only</div>
+        <div class="legend-item"><span class="swatch swatch-U"></span>Uracil (U) — replaces T in RNA</div>
       </div>
     </div>
   </section>
 
-  <!-- ============ SECTION: INTRO / CENTRAL DOGMA ============ -->
+  <!-- ============ HORIZONTAL PINNED SECTION ============ -->
+  <section class="section-pinned" id="pinned">
+    <div class="pinned-track">
+      <div class="pinned-panel pinned-1">
+        <div class="pinned-inner">
+          <div class="pinned-kicker">STEP 01</div>
+          <h2>Replication</h2>
+          <p>Before a cell divides, every strand of DNA is copied — letter for letter — into two identical helices.</p>
+        </div>
+      </div>
+      <div class="pinned-panel pinned-2">
+        <div class="pinned-inner">
+          <div class="pinned-kicker">STEP 02</div>
+          <h2>Transcription</h2>
+          <p>RNA polymerase opens the helix at a promoter and transcribes one strand into messenger RNA.</p>
+        </div>
+      </div>
+      <div class="pinned-panel pinned-3">
+        <div class="pinned-inner">
+          <div class="pinned-kicker">STEP 03</div>
+          <h2>Transport</h2>
+          <p>The mRNA leaves the nucleus through a pore and travels through the cytoplasm to a ribosome.</p>
+        </div>
+      </div>
+      <div class="pinned-panel pinned-4">
+        <div class="pinned-inner">
+          <div class="pinned-kicker">STEP 04</div>
+          <h2>Translation</h2>
+          <p>The ribosome reads codons three letters at a time, assembling amino acids into a finished protein.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ INTRO / CENTRAL DOGMA ============ -->
   <section class="section section-intro" id="intro">
     <div class="container">
       <div class="split">
         <div class="split-text reveal">
           <span class="section-kicker">01 · THE CENTRAL DOGMA</span>
-          <h2 class="section-heading">Information <em>flows</em> from DNA to RNA to Protein.</h2>
-          <p>Every cell in your body runs on the same principle, first proposed by Francis Crick in 1958. DNA is the archive. RNA is the messenger. Protein is the machine that does the work.</p>
-          <p>In this game you will rebuild that pipeline with your own hands — matching base pairs, landing an RNA polymerase, guiding mRNA through the cytoplasm, and decoding codons into amino acids.</p>
+          <h2 class="section-heading split-heading" data-split>Information flows from DNA to RNA to Protein.</h2>
+          <p>First described by Francis Crick in 1958, the central dogma is the blueprint every living cell follows. DNA is the archive. RNA is the messenger. Protein is the machine that gets the work done.</p>
+          <p>In this game you rebuild that pipeline by hand — matching base pairs, landing an RNA polymerase, guiding mRNA through the cytoplasm, and decoding codons into amino acids.</p>
         </div>
         <div class="dogma-flow reveal">
           <div class="dogma-node dogma-dna"><span>DNA</span></div>
@@ -104,36 +175,34 @@
     </div>
   </section>
 
-  <!-- ============ SECTION: DNA ============ -->
+  <!-- ============ DNA SECTION ============ -->
   <section class="section section-dna" id="dna">
     <div class="parallax-bg"></div>
     <div class="container">
       <span class="section-kicker reveal">02 · LEVEL 1 — DNA BUILDING</span>
-      <h2 class="section-heading reveal">Two strands. One zipper of hydrogen bonds.</h2>
+      <h2 class="section-heading reveal split-heading" data-split>Two strands. One zipper of hydrogen bonds.</h2>
 
       <div class="split">
         <div class="split-text reveal">
-          <p>DNA is a double helix. Each rung of the ladder is a pair of bases held together by hydrogen bonds — <strong>A</strong> always pairs with <strong>T</strong>, and <strong>C</strong> always pairs with <strong>G</strong>. This simple rule is how genetic information is copied faithfully every time a cell divides.</p>
+          <p>DNA is a double helix. Each rung of the ladder is a pair of bases held together by hydrogen bonds — <strong>A</strong> always pairs with <strong>T</strong>, and <strong>C</strong> always pairs with <strong>G</strong>. This rule is how genetic information is copied faithfully every time a cell divides.</p>
           <p>In Level 1, a template strand appears on the left. Your job is to place the complementary base on the right. Three mutations and the strand collapses — your cell takes damage.</p>
-          <ul class="fact-list">
-            <li><span class="fact-num">3.2B</span> base pairs in the human genome</li>
-            <li><span class="fact-num">2m</span> of DNA coiled inside each cell</li>
-            <li><span class="fact-num">99.9%</span> of DNA is identical between any two humans</li>
-          </ul>
+          <div class="pair-rule">
+            <div class="pair-rule-row"><span class="pill pill-A">A</span>—<span class="pill pill-T">T</span></div>
+            <div class="pair-rule-row"><span class="pill pill-C">C</span>—<span class="pill pill-G">G</span></div>
+          </div>
         </div>
         <div class="dna-demo reveal">
           <div class="helix-demo" id="helix-demo"></div>
-          <p class="caption">Hover the pairs — they flash their hydrogen bonds.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ SECTION: TRANSCRIPTION ============ -->
+  <!-- ============ TRANSCRIPTION ============ -->
   <section class="section section-transcription" id="transcription">
     <div class="container">
       <span class="section-kicker reveal">03 · LEVEL 2 — TRANSCRIPTION</span>
-      <h2 class="section-heading reveal">Copying DNA into a portable message.</h2>
+      <h2 class="section-heading reveal split-heading" data-split>Copy the code into a portable message.</h2>
 
       <div class="split reverse">
         <div class="poly-demo reveal">
@@ -142,26 +211,26 @@
             <div class="poly-droplet" id="poly-droplet"></div>
             <div class="poly-strand"></div>
           </div>
-          <p class="caption">Press any key when the droplet is over the promoter.</p>
+          <p class="caption">Click anywhere in the track when the droplet is over the promoter.</p>
         </div>
         <div class="split-text reveal">
-          <p>DNA never leaves the nucleus — it's too precious. Instead, an enzyme called <strong>RNA polymerase</strong> binds to a special region called the <em>promoter</em>, unzips the double helix, and copies one strand into a messenger molecule called <strong>mRNA</strong>.</p>
-          <p>In Level 2, the RNA polymerase droplet bounces across the screen. Land it on the promoter three times to finish transcription. Miss too often and the cell shuts transcription down.</p>
+          <p>DNA never leaves the nucleus — it's too precious. Instead, <strong>RNA polymerase</strong> binds to a region called the <em>promoter</em>, unzips the double helix, and copies one strand into <strong>messenger RNA</strong>.</p>
+          <p>In Level 2, the polymerase droplet bounces across the screen. Land it on the promoter three times to finish transcription. Miss too often and the cell shuts transcription down.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ SECTION: mRNA MAZE ============ -->
+  <!-- ============ mRNA MAZE ============ -->
   <section class="section section-maze" id="maze">
     <div class="container">
       <span class="section-kicker reveal">04 · LEVEL 3 — mRNA MAZE</span>
-      <h2 class="section-heading reveal">A dangerous journey through the cytoplasm.</h2>
+      <h2 class="section-heading reveal split-heading" data-split>Reach the ribosome before you degrade.</h2>
 
       <div class="split">
         <div class="split-text reveal">
-          <p>Once the mRNA is made, it has to travel from the nucleus, out through a nuclear pore, and across the cytoplasm to a <strong>ribosome</strong>. Along the way it faces hungry enzymes (RNases) that can shred it, and it needs ATP energy to keep moving.</p>
-          <p>In Level 3 you steer the mRNA through a maze. Dodge enzyme hazards, collect glowing energy packets, and reach the ribosome before your timer — or your health — runs out.</p>
+          <p>Once mRNA is made, it has to travel from the nucleus, out through a nuclear pore, and across the cytoplasm to a <strong>ribosome</strong>. Hungry enzymes (RNases) can shred it on the way, and it needs ATP energy to keep moving.</p>
+          <p>In Level 3 you steer the mRNA through a maze. Dodge enzymes, collect glowing energy packets, and reach the ribosome before your timer — or your cell health — runs out.</p>
         </div>
         <div class="maze-demo reveal">
           <div class="maze-grid" id="maze-grid"></div>
@@ -170,11 +239,13 @@
     </div>
   </section>
 
-  <!-- ============ SECTION: TRANSLATION ============ -->
+  <!-- ============ TRANSLATION ============ -->
   <section class="section section-translation" id="translation">
     <div class="container">
       <span class="section-kicker reveal">05 · LEVEL 4 — TRANSLATION</span>
-      <h2 class="section-heading reveal">Reading the code, three letters at a time.</h2>
+      <h2 class="section-heading reveal split-heading" data-split>Read the code, three letters at a time.</h2>
+
+      <p class="section-lead reveal">The ribosome reads mRNA in groups of three nucleotides called <strong>codons</strong>. Each codon specifies exactly one amino acid. Chain enough amino acids together and you have a <strong>protein</strong> — the molecular machines that run every process in your body.</p>
 
       <div class="codon-demo reveal">
         <div class="codon-track">
@@ -190,37 +261,36 @@
         </div>
         <p class="caption">Click the correct amino acid for this codon.</p>
       </div>
-
-      <p class="section-lead reveal">The ribosome reads mRNA in groups of three nucleotides called <strong>codons</strong>. Each codon specifies exactly one amino acid. String enough amino acids together and you have a <strong>protein</strong> — the molecular machines that run every process in your body.</p>
     </div>
   </section>
 
-  <!-- ============ CELL HEALTH EXPLAINER ============ -->
+  <!-- ============ CELL HEALTH ============ -->
   <section class="section section-health">
     <div class="container">
       <span class="section-kicker reveal">06 · THE CELL HEALTH BAR</span>
-      <h2 class="section-heading reveal">Every mistake has a biological cost.</h2>
+      <h2 class="section-heading reveal split-heading" data-split>One unified stakes system across all four levels.</h2>
       <div class="health-visual reveal">
         <div class="cell-org">
           <div class="cell-nucleus"></div>
-          <div class="cell-particles"></div>
         </div>
         <div class="health-bar-wrap">
           <div class="health-bar" id="demo-health"><div class="health-bar-fill"></div></div>
           <div class="health-bar-label">CELL HEALTH: <span id="health-num">100</span>%</div>
-          <button id="damage-btn" class="btn btn-small">INFLICT MUTATION (-15)</button>
-          <button id="heal-btn" class="btn btn-small">REPAIR DNA (+10)</button>
+          <div class="health-buttons">
+            <button id="damage-btn" class="btn btn-small">INFLICT MUTATION (-15)</button>
+            <button id="heal-btn" class="btn btn-small">REPAIR DNA (+10)</button>
+          </div>
         </div>
       </div>
-      <p class="section-lead reveal">Mutations, failed transcription, degraded mRNA, misfolded proteins — each one reduces your cell's health. Hit zero and the cell dies. The bar unifies all four levels into one story.</p>
+      <p class="section-lead reveal">Mutations, failed transcription, degraded mRNA, and misfolded proteins all drain the same cell-health bar. Hit zero and the cell dies.</p>
     </div>
   </section>
 
   <!-- ============ PLAY SECTION ============ -->
   <section class="section section-play" id="play">
     <div class="container">
-      <h2 class="section-heading reveal">Ready to play?</h2>
-      <p class="section-lead reveal">The game runs on <strong>Microsoft MakeCode Arcade</strong>. Open the link below, switch the editor to Python, and paste in the provided <code>dna_game.py</code> file.</p>
+      <h2 class="section-heading reveal split-heading" data-split>Ready to play?</h2>
+      <p class="section-lead reveal">The game runs on <strong>Microsoft MakeCode Arcade</strong>. Open the link below, switch the editor to Python, and paste in <code>dna_game.py</code>.</p>
 
       <div class="play-card reveal">
         <div class="play-card-inner">
@@ -266,7 +336,8 @@
         <div class="footer-strand"></div>
         <div class="footer-strand"></div>
       </div>
-      <p>Built for curious humans. Biology is beautiful.</p>
+      <div class="footer-brand">CELL STUDIO</div>
+      <p>Interactive biology for curious humans.</p>
       <p class="footer-small">A → T · C → G · U → A. The code is universal.</p>
     </div>
   </footer>
