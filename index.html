@@ -10,7 +10,6 @@
 <style>
 /* ============================================================
    CELL STUDIO — DNA: CODE OF LIFE
-   All styles inline. One-file build.
    ============================================================ */
 :root {
   --c-a: #ff3b4c;   --c-t: #3277ff;   --c-c: #30d68a;
@@ -19,6 +18,8 @@
   --ink: #ecefff;   --ink-dim: #9aa3c7;   --accent: #7cf9ff;
   --f-display: 'Press Start 2P', monospace;
   --f-body: 'Space Grotesk', system-ui, sans-serif;
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -26,8 +27,68 @@ body {
   background: var(--bg-0); color: var(--ink);
   font-family: var(--f-body); line-height: 1.6;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+/* ============================================================
+   CRT / OLD-TV SHADER — subtle, non-obstructive
+   ============================================================ */
+.crt-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  mix-blend-mode: normal;
+}
+/* scanlines — wider spacing, toned down */
+.crt-overlay::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.26) 0px,
+    rgba(0, 0, 0, 0.26) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+  opacity: 1;
+}
+/* vignette + curvature tint — moderate */
+.crt-overlay::after {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at center, transparent 48%, rgba(0, 0, 0, 0.65) 100%),
+    radial-gradient(ellipse at center, rgba(124, 249, 255, 0.04) 0%, transparent 50%);
+  opacity: 1;
+}
+/* flicker only — no rolling sweep */
+.crt-flicker {
+  position: absolute; inset: 0;
+  background: rgba(255, 255, 255, 0.04);
+  animation: crt-flick 0.16s steps(2) infinite;
+  mix-blend-mode: overlay;
+}
+@keyframes crt-flick {
+  0%   { opacity: 0.1; }
+  50%  { opacity: 0.55; }
+  100% { opacity: 0.2; }
+}
+/* chromatic aberration — moderate color fringing on edges */
+body::before {
+  content: ''; position: fixed; inset: 0;
+  pointer-events: none; z-index: 9997;
+  background:
+    linear-gradient(90deg, rgba(255, 59, 76, 0.05), transparent 12%),
+    linear-gradient(-90deg, rgba(50, 119, 255, 0.05), transparent 12%);
+  mix-blend-mode: screen;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crt-roll, .crt-flicker { animation: none; display: none; }
+}
 
 /* LOADER */
 .loader {
@@ -55,10 +116,10 @@ a { color: inherit; text-decoration: none; }
   position: fixed; top: 0; left: 0; height: 3px; width: 0%;
   background: linear-gradient(90deg, var(--c-a), var(--c-g), var(--c-c), var(--c-t), var(--c-u));
   z-index: 999; box-shadow: 0 0 10px var(--accent);
-  transition: width 0.08s linear;
+  transition: width 0.1s linear;
 }
 
-/* MINIMAL CURSOR ACCENT (subtle, not distracting) */
+/* CURSOR SPOT */
 .cursor-spot {
   position: fixed; top: 0; left: 0; width: 8px; height: 8px;
   border-radius: 50%; background: var(--accent);
@@ -66,37 +127,28 @@ a { color: inherit; text-decoration: none; }
   pointer-events: none; z-index: 9999;
   mix-blend-mode: screen;
   transform: translate(-50%, -50%);
-  transition: width 0.2s ease, height 0.2s ease, opacity 0.3s ease;
+  transition: width 0.25s var(--ease-smooth), height 0.25s var(--ease-smooth), opacity 0.3s ease;
   opacity: 0.7;
+  will-change: transform, left, top;
 }
-.cursor-spot.active { width: 24px; height: 24px; opacity: 0.35; }
+.cursor-spot.active { width: 28px; height: 28px; opacity: 0.35; }
 @media (max-width: 720px) { .cursor-spot { display: none; } }
 
 /* PARTICLES */
 .particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
-.particle { position: absolute; font-family: var(--f-display); font-weight: bold; opacity: 0.18; animation: float-up linear infinite; }
+.particle { position: absolute; font-family: var(--f-display); font-weight: bold; opacity: 0.18; animation: float-up linear infinite; will-change: transform, opacity; }
 @keyframes float-up {
   0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-  10%  { opacity: 0.35; } 90% { opacity: 0.35; }
+  10%  { opacity: 0.32; } 90% { opacity: 0.32; }
   100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
 }
-
-/* SOUND TOGGLE */
-.sound-toggle {
-  position: fixed; top: 1.2rem; right: 1.2rem; z-index: 100;
-  background: rgba(10,14,35,0.8); border: 1px solid rgba(124, 249, 255, 0.4);
-  color: var(--accent); font-family: var(--f-display); font-size: 0.55rem;
-  padding: 0.6rem 0.9rem; cursor: pointer; backdrop-filter: blur(10px);
-  letter-spacing: 2px; transition: all 0.25s ease;
-}
-.sound-toggle:hover { background: var(--accent); color: var(--bg-0); box-shadow: 0 0 20px var(--accent); }
 
 /* NAVBAR */
 .navbar {
   position: fixed; top: 0; left: 0; width: 100%;
   padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center;
   z-index: 50; background: rgba(5, 6, 13, 0.6); backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255,255,255,0.05); transition: all 0.3s ease;
+  border-bottom: 1px solid rgba(255,255,255,0.05); transition: all 0.35s var(--ease-smooth);
 }
 .navbar.scrolled { padding: 0.6rem 2rem; background: rgba(5, 6, 13, 0.92); }
 .brand { display: flex; align-items: center; gap: 0.8rem; }
@@ -110,25 +162,24 @@ a { color: inherit; text-decoration: none; }
 .brand-text { display: flex; flex-direction: column; line-height: 1; }
 .brand-name { font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 3px; color: var(--ink); }
 .brand-tag { font-size: 0.65rem; color: var(--ink-dim); margin-top: 0.3rem; letter-spacing: 1px; }
-
 .nav-links { display: flex; gap: 2rem; list-style: none; }
 .nav-link {
   font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 2px;
-  position: relative; padding: 0.4rem 0; transition: color 0.2s;
+  position: relative; padding: 0.4rem 0; transition: color 0.25s var(--ease-smooth);
   cursor: pointer;
 }
 .nav-link::after {
   content: ''; position: absolute; bottom: -2px; left: 0;
-  width: 0%; height: 2px; background: var(--accent); transition: width 0.3s;
+  width: 0%; height: 2px; background: var(--accent); transition: width 0.35s var(--ease-smooth);
 }
 .nav-link:hover { color: var(--accent); }
 .nav-link:hover::after { width: 100%; }
-.nav-cta { background: var(--c-u); padding: 0.5rem 1rem; border-radius: 4px; color: #fff !important; }
+.nav-cta { background: var(--c-u); padding: 0.5rem 1rem; border-radius: 4px; color: #fff !important; transition: all 0.3s var(--ease-smooth); }
 .nav-cta:hover { background: var(--c-a); box-shadow: 0 0 18px var(--c-a); }
 .nav-cta::after { display: none; }
 @media (max-width: 720px) { .brand-tag { display: none; } .nav-links { gap: 1rem; } }
 
-/* HERO — DNA lives on the right, text on the left so nothing blocks reading */
+/* HERO */
 .hero {
   position: relative; min-height: 100vh;
   display: flex; align-items: center;
@@ -156,7 +207,7 @@ a { color: inherit; text-decoration: none; }
 .hero-kicker {
   font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 6px;
   color: var(--accent); margin-bottom: 1.5rem;
-  opacity: 0; animation: fade-up 1s ease 0.2s forwards;
+  opacity: 0; animation: fade-up 1s var(--ease-smooth) 0.2s forwards;
 }
 .hero-title {
   font-family: var(--f-display); font-size: clamp(1.6rem, 5vw, 3.4rem);
@@ -166,7 +217,7 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 900px) { .hero-title { justify-content: center; } .hero-cta { justify-content: center; } }
 .title-word {
   display: inline-block; opacity: 0; transform: translateY(40px);
-  animation: title-in 0.8s ease forwards;
+  animation: title-in 0.9s var(--ease-smooth) forwards;
   text-shadow: 0 0 20px currentColor; cursor: pointer;
 }
 .title-word:nth-child(1) { color: var(--c-a); animation-delay: 0.3s; }
@@ -180,23 +231,23 @@ a { color: inherit; text-decoration: none; }
 }
 .hero-subtitle {
   max-width: 640px; margin: 0 0 3rem 0; font-size: 1.15rem; color: var(--ink-dim);
-  opacity: 0; transform: translateY(20px); animation: fade-up 1s ease 1.4s forwards;
+  opacity: 0; transform: translateY(20px); animation: fade-up 1s var(--ease-smooth) 1.4s forwards;
 }
 @keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 .hero-cta {
   display: flex; gap: 1.2rem; justify-content: flex-start; flex-wrap: wrap;
-  opacity: 0; transform: translateY(20px); animation: fade-up 1s ease 1.7s forwards;
+  opacity: 0; transform: translateY(20px); animation: fade-up 1s var(--ease-smooth) 1.7s forwards;
 }
 .scroll-hint {
   position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
   font-family: var(--f-display); font-size: 0.5rem; letter-spacing: 3px;
   color: var(--ink-dim); display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
-  opacity: 0; animation: fade-up 1s ease 2s forwards;
+  opacity: 0; animation: fade-up 1s var(--ease-smooth) 2s forwards;
 }
 .scroll-hint span { display: block; width: 2px; height: 40px; background: linear-gradient(to bottom, transparent, var(--accent)); animation: scroll-line 1.8s ease-in-out infinite; }
 @keyframes scroll-line { 0%,100% { transform: scaleY(0.3); opacity: 0.3; } 50% { transform: scaleY(1); opacity: 1; } }
 
-/* BUTTONS — fill uses an explicit --btn-fill var so hover text stays readable */
+/* BUTTONS */
 .btn {
   --btn-fill: var(--ink);
   --btn-text: var(--ink);
@@ -204,14 +255,14 @@ a { color: inherit; text-decoration: none; }
   display: inline-block; font-family: var(--f-display); font-size: 0.7rem;
   letter-spacing: 3px; padding: 1rem 2rem; border: 2px solid var(--btn-fill);
   border-radius: 4px; cursor: pointer; background: transparent; color: var(--btn-text);
-  transition: color 0.25s ease, transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.25s ease;
+  transition: color 0.3s var(--ease-smooth), transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth);
   text-decoration: none; position: relative; overflow: hidden;
   z-index: 0;
 }
 .btn::before {
   content: ''; position: absolute; top: 0; left: -100%;
   width: 100%; height: 100%; background: var(--btn-fill);
-  transition: left 0.4s ease; z-index: -1;
+  transition: left 0.45s var(--ease-smooth); z-index: -1;
 }
 .btn:hover::before { left: 0; }
 .btn:hover { color: var(--btn-text-hover); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,255,255,0.15); }
@@ -237,22 +288,15 @@ a { color: inherit; text-decoration: none; }
 .split-text strong { color: var(--accent); }
 
 /* REVEAL */
-.reveal { opacity: 0; transform: translateY(50px); transition: opacity 0.9s cubic-bezier(0.2,0.9,0.3,1), transform 0.9s cubic-bezier(0.2,0.9,0.3,1); }
+.reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.9s var(--ease-smooth), transform 0.9s var(--ease-smooth); }
 .reveal.visible { opacity: 1; transform: translateY(0); }
-
-.split-heading .char {
-  display: inline-block; opacity: 0; transform: translateY(30px) rotateZ(10deg);
-  transition: opacity 0.5s ease, transform 0.6s cubic-bezier(0.2,0.9,0.3,1);
-}
-.split-heading.visible .char { opacity: 1; transform: translateY(0) rotateZ(0); }
 
 /* STATS */
 .section-stats { background: linear-gradient(180deg, var(--bg-0), var(--bg-1)); padding: 6rem 0; }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; text-align: center; }
-.stat { padding: 2rem 1rem; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(255,255,255,0.02); transition: transform 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease; }
+.stat { padding: 2rem 1rem; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(255,255,255,0.02); transition: transform 0.5s var(--ease-smooth), border-color 0.5s var(--ease-smooth), box-shadow 0.5s var(--ease-smooth); }
 .stat:hover { transform: translateY(-6px); border-color: var(--accent); box-shadow: 0 10px 40px rgba(124, 249, 255, 0.15); }
 .stat-num { font-family: var(--f-display); font-size: 2rem; color: var(--c-g); margin-bottom: 0.6rem; display: inline-block; text-shadow: 0 0 20px var(--c-g); }
-.stat-unit { font-family: var(--f-display); font-size: 1.2rem; color: var(--c-g); margin-left: 4px; }
 .stat-label { color: var(--ink-dim); font-size: 0.95rem; line-height: 1.5; }
 
 /* LETTER GRID */
@@ -261,8 +305,8 @@ a { color: inherit; text-decoration: none; }
 .letter-cell {
   aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
   font-family: var(--f-display); font-size: 0.85rem; border-radius: 4px;
-  transform-style: preserve-3d; opacity: 0; animation: letter-drop 0.6s ease forwards;
-  cursor: pointer; transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transform-style: preserve-3d; opacity: 0; animation: letter-drop 0.6s var(--ease-smooth) forwards;
+  cursor: pointer; transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth);
   user-select: none; position: relative;
 }
 .letter-cell:hover { transform: translateZ(30px) translateY(-4px) scale(1.15); z-index: 2; }
@@ -287,29 +331,8 @@ a { color: inherit; text-decoration: none; }
 .swatch-C { background: var(--c-c); }  .swatch-G { background: var(--c-g); }
 .swatch-U { background: var(--c-u); }
 
-/* HORIZONTAL PINNED */
-.section-pinned { position: relative; height: 400vh; background: linear-gradient(180deg, var(--bg-0), #0c1030); }
-.pinned-track { position: sticky; top: 0; height: 100vh; display: flex; width: 400vw; will-change: transform; }
-.pinned-panel { flex: 0 0 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative; }
-.pinned-panel::before { content: ''; position: absolute; inset: 0; opacity: 0.25; }
-.pinned-1::before { background: radial-gradient(circle at 30% 50%, var(--c-a), transparent 50%); }
-.pinned-2::before { background: radial-gradient(circle at 50% 50%, var(--c-u), transparent 50%); }
-.pinned-3::before { background: radial-gradient(circle at 70% 50%, var(--c-c), transparent 50%); }
-.pinned-4::before { background: radial-gradient(circle at 50% 50%, var(--c-g), transparent 50%); }
-.pinned-inner { position: relative; z-index: 2; max-width: 720px; text-align: center; }
-.pinned-kicker { font-family: var(--f-display); font-size: 0.7rem; letter-spacing: 4px; color: var(--accent); margin-bottom: 1.5rem; }
-.pinned-panel h2 { font-family: var(--f-display); font-size: clamp(2rem, 6vw, 4.5rem); letter-spacing: 4px; margin-bottom: 1.5rem; text-shadow: 0 0 30px currentColor; }
-.pinned-1 h2 { color: var(--c-a); } .pinned-2 h2 { color: var(--c-u); }
-.pinned-3 h2 { color: var(--c-c); } .pinned-4 h2 { color: var(--c-g); }
-.pinned-panel p { font-size: 1.2rem; color: var(--ink); max-width: 560px; margin: 0 auto; line-height: 1.6; }
-@media (max-width: 720px) {
-  .section-pinned { height: auto; }
-  .pinned-track { position: static; width: 100%; flex-direction: column; }
-  .pinned-panel { flex: 0 0 auto; height: auto; min-height: 50vh; padding: 5rem 2rem; }
-}
-
 /* DOGMA */
-.section-intro { background: linear-gradient(180deg, #0c1030, var(--bg-0)); }
+.section-intro { background: linear-gradient(180deg, var(--bg-0), var(--bg-0)); }
 .dogma-flow { display: flex; align-items: center; justify-content: center; gap: 0.8rem; flex-wrap: wrap; }
 .dogma-node { width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 2px; color: #fff; animation: dogma-pulse 2.5s ease-in-out infinite; box-shadow: 0 0 30px currentColor; }
 .dogma-dna { background: var(--c-a); animation-delay: 0s; }
@@ -320,82 +343,11 @@ a { color: inherit; text-decoration: none; }
 @keyframes dash-in { to { stroke-dashoffset: 0; } }
 @keyframes dogma-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 
-/* DNA */
-.section-dna { background: linear-gradient(180deg, var(--bg-0), #0f1030); }
-.parallax-bg { position: absolute; inset: 0; background-image: radial-gradient(circle at 20% 30%, rgba(255,59,76,0.12), transparent 40%), radial-gradient(circle at 80% 70%, rgba(50,119,255,0.12), transparent 40%); will-change: transform; }
-.fact-list { list-style: none; margin-top: 2rem; }
-.fact-list li { display: flex; align-items: baseline; gap: 1rem; padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.08); font-size: 1.05rem; }
-.fact-num { font-family: var(--f-display); font-size: 1.2rem; color: var(--c-g); min-width: 80px; }
-.pair-rule { display: flex; gap: 2rem; margin-top: 2rem; flex-wrap: wrap; }
-.pair-rule-row { display: flex; align-items: center; gap: 0.5rem; font-family: var(--f-display); font-size: 1.2rem; color: var(--ink); }
-.pill { width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 0 14px currentColor; }
-.pill-A { background: var(--c-a); } .pill-T { background: var(--c-t); }
-.pill-C { background: var(--c-c); color: #000; } .pill-G { background: var(--c-g); color: #000; }
-
-.helix-demo { position: relative; width: 100%; height: 420px; perspective: 1000px; }
-.helix-rung { position: absolute; left: 50%; width: 200px; height: 20px; margin-left: -100px; display: flex; justify-content: space-between; align-items: center; transform-origin: center; transition: transform 0.3s ease; }
-.helix-rung:hover .helix-bond { background: #fff; box-shadow: 0 0 20px #fff; }
-.helix-base { width: 34px; height: 34px; border-radius: 8px; font-family: var(--f-display); font-size: 0.85rem; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 0 14px currentColor; cursor: pointer; }
-.helix-base.A { background: var(--c-a); } .helix-base.T { background: var(--c-t); }
-.helix-base.C { background: var(--c-c); color: #000; } .helix-base.G { background: var(--c-g); color: #000; }
-.helix-bond { flex: 1; height: 3px; margin: 0 4px; background: rgba(255,255,255,0.35); transition: all 0.3s ease; }
-.caption { margin-top: 1rem; font-size: 0.9rem; color: var(--ink-dim); text-align: center; font-style: italic; }
-
-/* TRANSCRIPTION */
-.section-transcription { background: linear-gradient(180deg, #0f1030, var(--bg-0)); }
-.poly-track { position: relative; height: 180px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); overflow: hidden; cursor: pointer; }
-.poly-promoter { position: absolute; top: 50%; left: 40%; transform: translate(-50%, -50%); width: 120px; padding: 0.6rem; background: rgba(255, 210, 59, 0.15); border: 2px dashed var(--c-g); border-radius: 6px; font-family: var(--f-display); font-size: 0.5rem; letter-spacing: 2px; color: var(--c-g); text-align: center; animation: promoter-glow 1.8s ease-in-out infinite; }
-@keyframes promoter-glow { 0%,100% { box-shadow: 0 0 10px var(--c-g); } 50% { box-shadow: 0 0 30px var(--c-g); } }
-.poly-droplet { position: absolute; top: 30%; left: 5%; width: 36px; height: 36px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #fff, var(--c-u)); box-shadow: 0 0 20px var(--c-u); animation: droplet-slide 2.6s ease-in-out infinite alternate; }
-@keyframes droplet-slide { 0% { left: 5%; transform: translateY(0) scale(1); } 50% { transform: translateY(20px) scale(1.15); } 100% { left: 85%; transform: translateY(0) scale(1); } }
-.poly-strand { position: absolute; bottom: 20%; left: 0; width: 100%; height: 6px; background: repeating-linear-gradient(90deg, var(--c-a) 0 24px, var(--c-t) 24px 48px, var(--c-c) 48px 72px, var(--c-g) 72px 96px); opacity: 0.8; animation: strand-shift 6s linear infinite; }
-@keyframes strand-shift { 0% { background-position: 0 0; } 100% { background-position: 96px 0; } }
-
-/* MAZE */
-.section-maze { background: linear-gradient(180deg, var(--bg-0), #17102e); }
-.maze-grid { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr); gap: 3px; aspect-ratio: 1 / 1; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); }
-.maze-cell { background: rgba(255,255,255,0.03); border-radius: 2px; transition: background 0.3s ease; }
-.maze-cell.wall { background: rgba(180, 77, 255, 0.3); }
-.maze-cell.mrna { background: var(--c-u); box-shadow: 0 0 14px var(--c-u); animation: mrna-pulse 0.9s ease-in-out infinite; }
-.maze-cell.enzyme { background: var(--c-a); box-shadow: 0 0 10px var(--c-a); animation: enzyme-wobble 1.3s ease-in-out infinite; }
-.maze-cell.energy { background: var(--c-g); box-shadow: 0 0 14px var(--c-g); animation: energy-spin 1.8s linear infinite; }
-.maze-cell.goal { background: var(--c-c); box-shadow: 0 0 18px var(--c-c); }
-@keyframes mrna-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
-@keyframes enzyme-wobble { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
-@keyframes energy-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-/* TRANSLATION */
-.section-translation { background: linear-gradient(180deg, #17102e, #0f1030); }
-.codon-demo { margin: 3rem auto; max-width: 720px; text-align: center; }
-.codon-track { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem; }
-.codon-cell { width: 90px; height: 90px; border-radius: 14px; font-family: var(--f-display); font-size: 2rem; display: flex; align-items: center; justify-content: center; color: #fff; animation: codon-spin 3s ease-in-out infinite; box-shadow: 0 0 30px currentColor; }
-.codon-cell.color-A { background: var(--c-a); animation-delay: 0s; }
-.codon-cell.color-T { background: var(--c-t); animation-delay: 0.2s; }
-.codon-cell.color-C { background: var(--c-c); color: #000; animation-delay: 0.4s; }
-.codon-cell.color-G { background: var(--c-g); color: #000; animation-delay: 0.6s; }
-.codon-cell.color-U { background: var(--c-u); animation-delay: 0.2s; }
-@keyframes codon-spin { 0%,100% { transform: rotateY(0deg); } 50% { transform: rotateY(180deg); } }
-.codon-arrow { font-size: 3rem; color: var(--accent); margin: 0.5rem 0; animation: arrow-bounce 1s ease-in-out infinite; }
-@keyframes arrow-bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
-.amino-options { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
-.amino-card { padding: 1.2rem 1.6rem; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.1); border-radius: 8px; font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 2px; cursor: pointer; transition: all 0.25s ease; }
-.amino-card:hover { background: rgba(124, 249, 255, 0.08); border-color: var(--accent); transform: translateY(-4px) scale(1.02); box-shadow: 0 8px 25px rgba(124, 249, 255, 0.2); }
-.amino-card.correct { background: var(--c-c); color: #000; border-color: var(--c-c); animation: correct-shake 0.4s ease; }
-.amino-card.wrong { background: var(--c-a); color: #fff; border-color: var(--c-a); animation: wrong-shake 0.4s ease; }
-@keyframes correct-shake { 0%,100% { transform: scale(1); } 40% { transform: scale(1.15); } }
-@keyframes wrong-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-
-.codon-chart { margin: 3rem auto; max-width: 720px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
-.codon-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; transition: all 0.3s ease; }
-.codon-row:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 6px 20px rgba(124,249,255,0.1); }
-.codon-row .mini-codon { font-family: var(--f-display); font-size: 0.8rem; letter-spacing: 2px; }
-.codon-row .mini-codon span { display: inline-block; width: 22px; height: 22px; border-radius: 4px; text-align: center; line-height: 22px; color: #fff; margin-right: 2px; font-size: 0.65rem; }
-
 /* MUTATIONS */
-.section-mutations { background: linear-gradient(180deg, #0f1030, var(--bg-0)); }
+.section-mutations { background: linear-gradient(180deg, var(--bg-0), var(--bg-0)); }
 .mut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 3rem; }
-.mut-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 1.6rem; transition: all 0.4s ease; position: relative; overflow: hidden; }
-.mut-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, var(--c-a), transparent); transition: left 0.6s ease; }
+.mut-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 1.6rem; transition: all 0.45s var(--ease-smooth); position: relative; overflow: hidden; }
+.mut-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, var(--c-a), transparent); transition: left 0.7s var(--ease-smooth); }
 .mut-card:hover::before { left: 100%; }
 .mut-card:hover { transform: translateY(-6px); border-color: var(--c-a); box-shadow: 0 12px 30px rgba(255,59,76,0.15); }
 .mut-card h3 { font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 2px; color: var(--c-a); margin-bottom: 0.8rem; }
@@ -405,13 +357,13 @@ a { color: inherit; text-decoration: none; }
 .section-health { background: linear-gradient(180deg, var(--bg-0), #0f1030); }
 .health-visual { display: grid; grid-template-columns: 1fr 1.5fr; gap: 3rem; align-items: center; margin-top: 3rem; }
 @media (max-width: 720px) { .health-visual { grid-template-columns: 1fr; } }
-.cell-org { position: relative; aspect-ratio: 1; max-width: 340px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(124, 249, 255, 0.3), rgba(50, 119, 255, 0.05) 70%); border: 2px solid rgba(124, 249, 255, 0.3); animation: cell-breathe 3s ease-in-out infinite; overflow: hidden; }
+.cell-org { position: relative; aspect-ratio: 1; max-width: 340px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(124, 249, 255, 0.3), rgba(50, 119, 255, 0.05) 70%); border: 2px solid rgba(124, 249, 255, 0.3); animation: cell-breathe 3s ease-in-out infinite; overflow: hidden; transition: border-color 0.6s var(--ease-smooth), animation-duration 0.6s var(--ease-smooth); }
 @keyframes cell-breathe { 0%,100% { transform: scale(1); box-shadow: 0 0 40px rgba(124, 249, 255, 0.2); } 50% { transform: scale(1.04); box-shadow: 0 0 80px rgba(124, 249, 255, 0.4); } }
 .cell-nucleus { position: absolute; top: 50%; left: 50%; width: 40%; height: 40%; border-radius: 50%; background: radial-gradient(circle, var(--c-u), var(--c-a)); transform: translate(-50%, -50%); animation: nucleus-spin 8s linear infinite; box-shadow: 0 0 30px var(--c-u); }
 @keyframes nucleus-spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
 .health-bar-wrap { display: flex; flex-direction: column; gap: 1rem; }
 .health-bar { width: 100%; height: 32px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.15); border-radius: 6px; overflow: hidden; }
-.health-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--c-c), var(--c-g), var(--c-a)); transition: width 0.6s cubic-bezier(0.2, 0.9, 0.3, 1); box-shadow: 0 0 12px rgba(255,255,255,0.3); }
+.health-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--c-c), var(--c-g), var(--c-a)); transition: width 0.6s var(--ease-smooth); box-shadow: 0 0 12px rgba(255,255,255,0.3); }
 .health-bar-label { font-family: var(--f-display); font-size: 0.7rem; letter-spacing: 2px; }
 .health-buttons { display: flex; gap: 1rem; flex-wrap: wrap; }
 
@@ -422,7 +374,7 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 860px) { .play-card-inner { grid-template-columns: 1fr; } }
 .gamepad { display: flex; gap: 2rem; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
 .dpad { position: relative; width: 120px; height: 120px; display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
-.dpad-btn { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); color: var(--accent); font-family: var(--f-display); font-size: 0.7rem; transition: all 0.15s ease; cursor: pointer; }
+.dpad-btn { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); color: var(--accent); font-family: var(--f-display); font-size: 0.7rem; transition: all 0.2s var(--ease-smooth); cursor: pointer; }
 .dpad-btn:hover { background: var(--accent); color: var(--bg-0); }
 .dpad-btn.up    { grid-column: 2; grid-row: 1; }
 .dpad-btn.down  { grid-column: 2; grid-row: 3; }
@@ -430,18 +382,15 @@ a { color: inherit; text-decoration: none; }
 .dpad-btn.right { grid-column: 3; grid-row: 2; }
 .dpad-btn.center { grid-column: 2; grid-row: 2; background: rgba(255,255,255,0.02); cursor: default; }
 .ab { display: flex; flex-direction: column; gap: 0.7rem; }
-.btn-a, .btn-b { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 0.9rem; color: #fff; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.btn-a, .btn-b { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 0.9rem; color: #fff; cursor: pointer; transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-smooth); }
 .btn-a { background: var(--c-a); box-shadow: 0 0 12px var(--c-a); }
 .btn-b { background: var(--c-t); box-shadow: 0 0 12px var(--c-t); }
 .btn-a:hover, .btn-b:hover { transform: scale(1.12); }
 .controls-list { list-style: none; font-size: 0.95rem; color: var(--ink-dim); }
 .controls-list li { padding: 0.3rem 0; }
 .controls-list strong { color: var(--accent); font-family: var(--f-display); font-size: 0.65rem; margin-right: 0.5rem; }
-.play-links { display: flex; flex-direction: column; gap: 1rem; }
-.install-steps { padding-left: 1.3rem; color: var(--ink-dim); line-height: 1.8; font-size: 0.95rem; margin-top: 0.5rem; }
-.install-steps li { padding: 0.2rem 0; }
-.install-steps strong { color: var(--accent); }
-.install-steps code { font-family: var(--f-display); font-size: 0.7rem; background: rgba(124, 249, 255, 0.1); padding: 0.15em 0.4em; border-radius: 3px; }
+.play-links { display: flex; flex-direction: column; gap: 1rem; align-items: flex-start; }
+.caption { margin-top: 1rem; font-size: 0.9rem; color: var(--ink-dim); text-align: center; font-style: italic; }
 
 /* FOOTER */
 .footer { background: var(--bg-0); padding: 4rem 0 3rem; text-align: center; color: var(--ink-dim); border-top: 1px solid rgba(255,255,255,0.08); }
@@ -472,14 +421,13 @@ a { color: inherit; text-decoration: none; }
 <!-- SCROLL PROGRESS -->
 <div class="scroll-progress" id="scroll-progress"></div>
 
-<!-- SOUND TOGGLE -->
-<button id="sound-toggle" class="sound-toggle" aria-label="Toggle sound">
-  <span id="sound-icon">♪</span>
-  <span id="sound-label">SOUND ON</span>
-</button>
-
 <!-- PARTICLES -->
 <div class="particles" id="particles"></div>
+
+<!-- CRT OVERLAY -->
+<div class="crt-overlay" aria-hidden="true">
+  <div class="crt-flicker"></div>
+</div>
 
 <!-- NAVBAR -->
 <nav class="navbar">
@@ -497,12 +445,8 @@ a { color: inherit; text-decoration: none; }
   </a>
   <ul class="nav-links">
     <li><a href="#why" class="nav-link">Why</a></li>
-    <li><a href="#dna" class="nav-link">L1</a></li>
-    <li><a href="#transcription" class="nav-link">L2</a></li>
-    <li><a href="#maze" class="nav-link">L3</a></li>
-    <li><a href="#translation" class="nav-link">L4</a></li>
     <li><a href="#mutations" class="nav-link">Die</a></li>
-    <li><a href="#play" class="nav-link nav-cta">Play</a></li>
+    <li><a href="https://sheepishlyroyal.github.io/cell-studio-game/" target="_blank" rel="noopener" class="nav-link nav-cta">Play</a></li>
   </ul>
 </nav>
 
@@ -520,9 +464,9 @@ a { color: inherit; text-decoration: none; }
       <span class="title-word" data-text="OF">OF</span>
       <span class="title-word" data-text="LIFE">LIFE</span>
     </h1>
-    <p class="hero-subtitle">A four-level pixel-art biology game. Build DNA, fire RNA polymerase, race a mRNA through a maze of hungry enzymes, and decode proteins one codon at a time — all with a unified Cell Health bar that makes every mistake count.</p>
+    <p class="hero-subtitle">A pixel-art biology game about the central dogma. Catch bases, ride the polymerase, run the maze — all on a single Cell Health bar that makes every mistake count.</p>
     <div class="hero-cta">
-      <a href="#play" class="btn btn-primary">PLAY NOW</a>
+      <a href="https://sheepishlyroyal.github.io/cell-studio-game/" target="_blank" rel="noopener" class="btn btn-primary">PLAY NOW</a>
       <a href="#why" class="btn btn-ghost">WHY YOU'LL LOVE IT</a>
     </div>
     <div class="scroll-hint"><span></span>SCROLL</div>
@@ -534,20 +478,12 @@ a { color: inherit; text-decoration: none; }
   <div class="container">
     <div class="stats-grid">
       <div class="stat reveal">
-        <div class="stat-num" data-count="4">0</div>
-        <div class="stat-label">Playable levels — DNA, RNA polymerase, mRNA maze, ribosome</div>
+        <div class="stat-num" data-count="3">0</div>
+        <div class="stat-label">Playable levels — pairing, transcription, mRNA maze</div>
       </div>
       <div class="stat reveal">
         <div class="stat-num" data-count="5">0</div>
         <div class="stat-label">Colors that link every letter to its nucleotide</div>
-      </div>
-      <div class="stat reveal">
-        <div class="stat-num" data-count="12">0</div>
-        <div class="stat-label">Hand-crafted sound effects &amp; level themes</div>
-      </div>
-      <div class="stat reveal">
-        <div class="stat-num" data-count="64">0</div>
-        <div class="stat-label">Codons you might face in Level 4 translation</div>
       </div>
       <div class="stat reveal">
         <div class="stat-num" data-count="1">0</div>
@@ -555,7 +491,7 @@ a { color: inherit; text-decoration: none; }
       </div>
       <div class="stat reveal">
         <div class="stat-num" data-count="0">0</div>
-        <div class="stat-label">Cost — free, browser-based, no account, runs on MakeCode</div>
+        <div class="stat-label">Cost — free, browser-based, play right now</div>
       </div>
     </div>
   </div>
@@ -565,56 +501,28 @@ a { color: inherit; text-decoration: none; }
 <section class="letter-grid-section" id="grid-section">
   <div class="container">
     <span class="section-kicker reveal">THE PIXEL PALETTE</span>
-    <h2 class="section-title reveal">Every letter has a color. Every color has a sound. Hover to hear.</h2>
+    <h2 class="section-title reveal">Every letter has a color. Hover to glitch.</h2>
     <div class="letter-grid" id="letter-grid"></div>
     <div class="legend reveal">
-      <div class="legend-item"><span class="swatch swatch-A"></span>A — red · triangle tone</div>
-      <div class="legend-item"><span class="swatch swatch-T"></span>T — blue · lower tone</div>
-      <div class="legend-item"><span class="swatch swatch-C"></span>C — green · mid tone</div>
-      <div class="legend-item"><span class="swatch swatch-G"></span>G — yellow · higher tone</div>
-      <div class="legend-item"><span class="swatch swatch-U"></span>U — purple · RNA chime</div>
+      <div class="legend-item"><span class="swatch swatch-A"></span>A — adenine</div>
+      <div class="legend-item"><span class="swatch swatch-T"></span>T — thymine</div>
+      <div class="legend-item"><span class="swatch swatch-C"></span>C — cytosine</div>
+      <div class="legend-item"><span class="swatch swatch-G"></span>G — guanine</div>
+      <div class="legend-item"><span class="swatch swatch-U"></span>U — uracil</div>
     </div>
-    <p class="caption reveal" style="margin-top: 2rem;">The same color-sound pairing shows up in-game — so you'll <em>feel</em> when a base pair is wrong before you even read it.</p>
   </div>
 </section>
 
-<!-- HORIZONTAL PINNED -->
-<section class="section-pinned" id="pinned">
-  <div class="pinned-track">
-    <div class="pinned-panel pinned-1"><div class="pinned-inner">
-      <div class="pinned-kicker">LEVEL 01 · PUZZLE</div>
-      <h2>BUILD THE HELIX</h2>
-      <p>Drag-place the right base against a template strand. Three wrong pairs and the whole DNA collapses — your cell takes a massive hit. Correct pairs snap into place with a hydrogen-bond animation and a chime.</p>
-    </div></div>
-    <div class="pinned-panel pinned-2"><div class="pinned-inner">
-      <div class="pinned-kicker">LEVEL 02 · TIMING</div>
-      <h2>LAND THE POLYMERASE</h2>
-      <p>A fast-moving droplet bounces across the screen. Tap A the moment it crosses the glowing promoter zone. Miss too often and transcription shuts down. Each hit speeds the droplet up — pressure compounds.</p>
-    </div></div>
-    <div class="pinned-panel pinned-3"><div class="pinned-inner">
-      <div class="pinned-kicker">LEVEL 03 · ACTION</div>
-      <h2>RUN THE MAZE</h2>
-      <p>Steer the mRNA from the nucleus to a waiting ribosome. Dodge RNase enzymes that chew you up on contact. Grab ATP energy packets. Beat the degradation timer before the message falls apart.</p>
-    </div></div>
-    <div class="pinned-panel pinned-4"><div class="pinned-inner">
-      <div class="pinned-kicker">LEVEL 04 · FOCUS</div>
-      <h2>DECODE THE PROTEIN</h2>
-      <p>One codon at a time, three options per round. Pick the right amino acid or watch your protein misfold. Get a perfect run and you synthesize a working protein — complete with a confetti finale.</p>
-    </div></div>
-  </div>
-</section>
-
-<!-- WHY YOU SHOULD PLAY -->
+<!-- WHY -->
 <section class="section section-intro" id="why">
   <div class="container">
     <div class="split">
       <div class="split-text reveal">
         <span class="section-kicker">01 · WHY YOU'LL LOVE IT</span>
-        <h2 class="section-heading">Four <em>tight</em> mini-games. One living cell to keep alive.</h2>
-        <p>Most biology explainers are read-only. This one isn't. Every mechanic in the game is a biological process you're physically operating — fire the polymerase, dodge the RNase, pick the amino acid — and every mistake shows up as damage on a shared Cell Health bar.</p>
-        <p><strong>Ludicrous animations.</strong> Hydrogen bonds zip closed on correct pairs. The helix glitches red on mistakes. Enzymes wobble. ATP packets spin. A death melody plays if your cell flatlines. A win melody plays if you make it to the protein.</p>
-        <p><strong>Chiptune soundtrack.</strong> Every level has its own theme, built note-by-note in MakeCode. Every action has a cue — place a base, land a polymerase, grab energy, take damage. You can learn the rhythm of the cell.</p>
-        <p><strong>Runs in a browser.</strong> Free, no account, no install. Open MakeCode Arcade, paste the Python file, hit play.</p>
+        <h2 class="section-heading">Three <em>tight</em> mini-games. One living cell to keep alive.</h2>
+        <p>Most biology explainers are read-only. This one isn't. Every mechanic is a biological process you're physically operating — catch the base, ride the polymerase, dodge the RNase — and every mistake shows up as damage on a shared Cell Health bar.</p>
+        <p><strong>Pixel-art animation.</strong> Hydrogen bonds zip closed on correct pairs. The helix glitches red on mistakes. Enzymes wobble as they chase. ATP packets spin.</p>
+        <p><strong>Runs in a browser.</strong> Free, no account, no install. Open the link and play.</p>
       </div>
       <div class="dogma-flow reveal">
         <div class="dogma-node dogma-dna"><span>DNA</span></div>
@@ -627,145 +535,36 @@ a { color: inherit; text-decoration: none; }
   </div>
 </section>
 
-<!-- LEVEL 1 PROMO -->
-<section class="section section-dna" id="dna">
-  <div class="parallax-bg"></div>
-  <div class="container">
-    <span class="section-kicker reveal">02 · LEVEL 1 — DNA BUILDING</span>
-    <h2 class="section-heading reveal">Snap the helix together, one base at a time.</h2>
-    <div class="split">
-      <div class="split-text reveal">
-        <p><strong>What you do:</strong> a template strand scrolls down the left side of the screen. Joystick your cursor up and down, cycle through A / T / C / G with the A button, and slam the correct complement into place with B.</p>
-        <p><strong>Why it's fun:</strong> correct pairs snap in with a glowing hydrogen-bond animation and a two-note chime. Wrong pairs shake the screen, flash red, and chip away at your Cell Health bar.</p>
-        <p><strong>What you'll pick up along the way:</strong> A pairs with T. C pairs with G. Three mistakes and you trigger a full DNA damage event.</p>
-        <div class="pair-rule">
-          <div class="pair-rule-row"><span class="pill pill-A">A</span>—<span class="pill pill-T">T</span></div>
-          <div class="pair-rule-row"><span class="pill pill-C">C</span>—<span class="pill pill-G">G</span></div>
-        </div>
-        <ul class="fact-list">
-          <li><span class="fact-num">6</span> base pairs per round — short, sharp, satisfying</li>
-          <li><span class="fact-num">3</span> mutations allowed before the strand collapses</li>
-          <li><span class="fact-num">+10</span> Cell Health restored for a clean build</li>
-          <li><span class="fact-num">0</span> tutorials required — controls shown on-screen</li>
-        </ul>
-      </div>
-      <div class="dna-demo reveal">
-        <div class="helix-demo" id="helix-demo"></div>
-        <p class="caption">Preview: each rung pulses as you scroll — that's the hydrogen-bond animation from the game.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- TRANSCRIPTION -->
-<section class="section section-transcription" id="transcription">
-  <div class="container">
-    <span class="section-kicker reveal">03 · LEVEL 2 — TRANSCRIPTION</span>
-    <h2 class="section-heading reveal">Drop the polymerase. Split the helix. Feel the tempo rise.</h2>
-    <div class="split reverse">
-      <div class="poly-demo reveal">
-        <div class="poly-track">
-          <div class="poly-promoter">PROMOTER</div>
-          <div class="poly-droplet" id="poly-droplet"></div>
-          <div class="poly-strand"></div>
-        </div>
-        <p class="caption">Click anywhere in the track when the droplet is over the promoter.</p>
-      </div>
-      <div class="split-text reveal">
-        <p><strong>What you do:</strong> a purple RNA-polymerase droplet bounces left-to-right across a DNA track. A yellow promoter zone glows in the middle. Press A at the exact moment the droplet crosses the promoter.</p>
-        <p><strong>Why it's fun:</strong> the droplet speeds up after every successful hit. By the third hit you're reading pixels faster than thought. Nail all three in a row and the strands visually separate, a star-field erupts, the level-up melody plays.</p>
-        <p><strong>The stakes:</strong> miss the promoter zone three times and transcription fails — huge damage to the Cell Health bar. The "cell shuts down" splash screen makes it sting.</p>
-        <p><strong>Skill-tested:</strong> timing, reflex, and the nerve to hold your press until the droplet is right on the zone.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- mRNA MAZE -->
-<section class="section section-maze" id="maze">
-  <div class="container">
-    <span class="section-kicker reveal">04 · LEVEL 3 — mRNA MAZE</span>
-    <h2 class="section-heading reveal">Dodge the enzymes. Grab the energy. Reach the ribosome.</h2>
-    <div class="split">
-      <div class="split-text reveal">
-        <p><strong>What you do:</strong> steer a purple mRNA sprite around a moving grid of red RNase enzymes, collecting gold ATP packets while a countdown timer ticks down.</p>
-        <p><strong>Why it's fun:</strong> this is the one pure-action level. Enzymes spawn from the top and rain down at random speeds. Energy packets flash into being in random spots. You're dodging, grabbing, and hunting for the green ribosome all at once.</p>
-        <p><strong>The stakes:</strong> every enzyme hit is 20 Cell Health gone and a fire-effect explosion. Reach the ribosome without enough ATP and it refuses to accept you — you have to keep collecting. Let the timer hit zero and the cell dies of RNA degradation.</p>
-        <p><strong>Reward:</strong> arrive with full energy, heal +20, and the level transitions to Translation with a cool-radial burst.</p>
-      </div>
-      <div class="maze-demo reveal">
-        <div class="maze-grid" id="maze-grid"></div>
-        <p class="caption">Purple = mRNA · Red = enzyme · Yellow = energy · Green = ribosome</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- TRANSLATION -->
-<section class="section section-translation" id="translation">
-  <div class="container">
-    <span class="section-kicker reveal">05 · LEVEL 4 — TRANSLATION</span>
-    <h2 class="section-heading reveal">Three letters flash. Three choices. Pick fast.</h2>
-
-    <p class="section-lead reveal"><strong>What you do:</strong> a codon appears in 3-D-spinning color tiles. Three amino-acid cards slide in below. Move the highlight arrow with left / right. Hit A to confirm. Get five codons right in a row and you've synthesized a full protein — confetti, win melody, victory screen.</p>
-
-    <div class="codon-demo reveal">
-      <div class="codon-track">
-        <div class="codon-cell color-A">A</div>
-        <div class="codon-cell color-U">U</div>
-        <div class="codon-cell color-G">G</div>
-      </div>
-      <div class="codon-arrow">↓</div>
-      <div class="amino-options">
-        <div class="amino-card amino-correct" data-correct>Methionine (Met)</div>
-        <div class="amino-card">Leucine (Leu)</div>
-        <div class="amino-card">Valine (Val)</div>
-      </div>
-      <p class="caption">Try the in-game feel — tap the right card, watch the shake.</p>
-    </div>
-
-    <p class="section-lead reveal" style="margin-top: 2.5rem;"><strong>Why it hooks you:</strong> every correct pick scores +20 and plays a rising chime. Every wrong pick shakes the screen, flashes red, and drops your Cell Health by 20. If you've already taken hits in Levels 1–3, one sloppy translation round is enough to kill the cell. The difficulty ramp feels real.</p>
-  </div>
-</section>
-
-<!-- WAYS TO LOSE -->
+<!-- MUTATIONS -->
 <section class="section section-mutations" id="mutations">
   <div class="container">
-    <span class="section-kicker reveal">06 · EIGHT WAYS YOUR CELL DIES</span>
+    <span class="section-kicker reveal">02 · SIX WAYS YOUR CELL DIES</span>
     <h2 class="section-heading reveal">Losing is never just <em>"game over."</em></h2>
-    <p class="section-lead reveal">Every mistake is themed. Every death has its own on-screen event, sound effect, and explanation. The Cell Health bar isn't cosmetic — it's the connective tissue that makes four tiny games feel like one living thing.</p>
+    <p class="section-lead reveal">Every mistake is themed. Every death has its own on-screen event and explanation. The Cell Health bar isn't cosmetic — it's the connective tissue that makes three tiny games feel like one living thing.</p>
     <div class="mut-grid">
       <div class="mut-card reveal">
         <h3>MUTATION OVERLOAD</h3>
-        <p>Pair three wrong bases in Level 1 and the strand goes unstable. A "DNA DAMAGE DETECTED" splash fires. Big Cell Health hit. The helix visibly glitches.</p>
+        <p>Pair wrong bases and the strand goes unstable. A "DNA DAMAGE DETECTED" splash fires. Big Cell Health hit. The helix visibly glitches.</p>
       </div>
       <div class="mut-card reveal">
         <h3>PROMOTER MISS</h3>
-        <p>Drop the RNA polymerase outside the promoter too many times in Level 2 and the cell shuts transcription down. "Transcription failed" — crushing.</p>
+        <p>Miss the TATA box too many times and transcription shuts down. "Transcription failed" — crushing.</p>
       </div>
       <div class="mut-card reveal">
         <h3>ENZYME STRIKE</h3>
-        <p>Take an RNase hit in Level 3 and a fire-effect explosion blasts off the enzyme while you lose 20 Cell Health. Keep getting hit and the maze ends early.</p>
-      </div>
-      <div class="mut-card reveal">
-        <h3>ENERGY DROUGHT</h3>
-        <p>Arrive at the ribosome without enough ATP and the level refuses to end. Let the timer expire and the mRNA is degraded for good.</p>
-      </div>
-      <div class="mut-card reveal">
-        <h3>BAD AMINO ACID</h3>
-        <p>Pick the wrong card in Level 4 and the screen shakes, a wrong-answer tone plays, and the protein misfolds. 20 Cell Health gone per miss.</p>
-      </div>
-      <div class="mut-card reveal">
-        <h3>MISFOLDED PROTEIN</h3>
-        <p>Pile up enough wrong amino acids and even if you survive, the final protein never folds correctly — nonfunctional, level lost.</p>
+        <p>Degradation enzymes chase you. Take a hit and a fire-effect explosion blasts the enzyme while you lose 20 Cell Health.</p>
       </div>
       <div class="mut-card reveal">
         <h3>TIMER DEGRADATION</h3>
-        <p>Every level has a soft time pressure. Linger too long in Level 1 and the strand degrades on its own. The clock is an enemy.</p>
+        <p>Every level has a soft clock. Linger and the mRNA degrades on its own. The timer is an enemy.</p>
+      </div>
+      <div class="mut-card reveal">
+        <h3>RIBOSOME MISS</h3>
+        <p>Get lost in the maze and let the timer hit zero. The message is degraded for good — no delivery, no heal.</p>
       </div>
       <div class="mut-card reveal">
         <h3>CELL DEATH</h3>
-        <p>Hit zero on Cell Health at any point and it's over. Death melody plays. Background turns blood red. Dissolve effect wipes the sprites away.</p>
+        <p>Hit zero on Cell Health at any point and it's over. Background turns blood red. Dissolve effect wipes the sprites.</p>
       </div>
     </div>
   </div>
@@ -774,7 +573,7 @@ a { color: inherit; text-decoration: none; }
 <!-- HEALTH -->
 <section class="section section-health">
   <div class="container">
-    <span class="section-kicker reveal">07 · ONE HEALTH BAR · FOUR LEVELS</span>
+    <span class="section-kicker reveal">03 · ONE HEALTH BAR · THREE LEVELS</span>
     <h2 class="section-heading reveal">Every mistake in every level hits the <em>same</em> bar.</h2>
     <div class="health-visual reveal">
       <div class="cell-org">
@@ -789,7 +588,7 @@ a { color: inherit; text-decoration: none; }
         </div>
       </div>
     </div>
-    <p class="section-lead reveal" style="margin-top: 2rem;">Try the demo — tap the buttons, watch the bar move. This is the exact mechanic inside the game. Clear a level and you heal. Botch a pairing, miss a promoter, bump an enzyme, pick a bad amino acid — you bleed. Stack mistakes across the whole run and the cell flatlines on you. <strong>That's why the game feels like a game, not a worksheet.</strong></p>
+    <p class="section-lead reveal" style="margin-top: 2rem;">Try the demo — tap the buttons, watch the bar move. Clear a level and you heal. Botch a pair, miss a promoter, bump an enzyme — you bleed. Stack mistakes across the whole run and the cell flatlines. <strong>That's why the game feels like a game, not a worksheet.</strong></p>
   </div>
 </section>
 
@@ -797,8 +596,7 @@ a { color: inherit; text-decoration: none; }
 <section class="section section-play" id="play">
   <div class="container">
     <h2 class="section-heading reveal">Ready to play?</h2>
-    <p class="section-lead reveal">The game runs on <strong>Microsoft MakeCode Arcade</strong> — free, browser-based, no account required. Two minutes from here to your first correct base pair.</p>
-
+    <p class="section-lead reveal">The game runs in your browser. No account, no install. One click, and you're in the cell.</p>
     <div class="play-card reveal">
       <div class="play-card-inner">
         <div class="play-controls">
@@ -816,21 +614,15 @@ a { color: inherit; text-decoration: none; }
             </div>
           </div>
           <ul class="controls-list">
-            <li><strong>◀ / ▶</strong> navigate options / slots</li>
-            <li><strong>▲ / ▼</strong> move mRNA in maze</li>
-            <li><strong>A</strong> cycle base / confirm / drop polymerase</li>
-            <li><strong>B</strong> place base pair</li>
+            <li><strong>▲ / ▼</strong> switch rails (L1) / move mRNA (L3)</li>
+            <li><strong>◀ / ▶</strong> steer polymerase (L2) / move mRNA (L3)</li>
+            <li><strong>A</strong> snap a base / fire transcription</li>
+            <li><strong>B</strong> secondary / menu confirm</li>
           </ul>
         </div>
         <div class="play-links">
-          <a class="btn btn-primary btn-big" href="https://arcade.makecode.com/" target="_blank" rel="noopener">OPEN MAKECODE ARCADE ↗</a>
-          <a class="btn btn-ghost btn-big" href="dna_game.py" download>DOWNLOAD dna_game.py</a>
-          <ol class="install-steps">
-            <li>Go to <strong>arcade.makecode.com</strong> and click <em>New Project</em>.</li>
-            <li>Top-right, switch the editor from <em>Blocks</em> to <em>Python</em>.</li>
-            <li>Paste the entire contents of <code>dna_game.py</code>.</li>
-            <li>Press the green play button. Enjoy!</li>
-          </ol>
+          <a class="btn btn-primary btn-big" href="https://sheepishlyroyal.github.io/cell-studio-game/" target="_blank" rel="noopener">LAUNCH GAME ↗</a>
+          <p style="font-size:0.9rem; color: var(--ink-dim); margin-top: 0.5rem;">Opens the game in a new tab.</p>
         </div>
       </div>
     </div>
@@ -846,130 +638,91 @@ a { color: inherit; text-decoration: none; }
     </div>
     <div class="footer-brand">CELL STUDIO</div>
     <p>Pixel-art biology for anyone with a keyboard and a curiosity streak.</p>
-    <p class="footer-small">Four levels · One cell · Play it, don't read about it.</p>
+    <p class="footer-small">Three levels · One cell · Play it, don't read about it.</p>
   </div>
 </footer>
 
 <script>
 /* ============================================================
-   CELL STUDIO — INTERACTIVITY
+   CELL STUDIO — INTERACTIVITY (no audio)
    ============================================================ */
-
-/* 0. AUDIO */
-const Sound = (() => {
-  let ctx = null, enabled = true;
-  function ensure() {
-    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
-    if (ctx && ctx.state === 'suspended') ctx.resume();
-  }
-  function tone(freq, duration = 0.12, type = 'square', volume = 0.05) {
-    if (!enabled) return; ensure(); if (!ctx) return;
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = type; o.frequency.value = freq; g.gain.value = volume;
-    o.connect(g).connect(ctx.destination);
-    const now = ctx.currentTime;
-    g.gain.setValueAtTime(volume, now);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    o.start(now); o.stop(now + duration);
-  }
-  function sequence(notes, gap = 0.1, type = 'square') {
-    if (!enabled) return;
-    notes.forEach((n, i) => setTimeout(() => tone(n, gap * 0.9, type), i * gap * 1000));
-  }
-  return {
-    click:   () => tone(880, 0.05, 'square', 0.03),
-    correct: () => sequence([523, 659, 784], 0.1, 'triangle'),
-    wrong:   () => sequence([196, 147], 0.13, 'sawtooth'),
-    bond:    () => tone(1046, 0.08, 'sine', 0.04),
-    energy:  () => tone(1318, 0.1, 'triangle', 0.04),
-    whoosh:  () => tone(220, 0.2, 'sine', 0.03),
-    levelup: () => sequence([523, 659, 784, 1046], 0.09, 'triangle'),
-    glitch:  () => tone(200 + Math.random() * 800, 0.03, 'square', 0.02),
-    letterA: () => tone(440, 0.08, 'square', 0.04),
-    letterT: () => tone(523, 0.08, 'square', 0.04),
-    letterC: () => tone(659, 0.08, 'square', 0.04),
-    letterG: () => tone(784, 0.08, 'square', 0.04),
-    letterU: () => tone(880, 0.08, 'square', 0.04),
-    toggle(s) { enabled = s; },
-    isEnabled: () => enabled
-  };
-})();
 
 /* 1. LOADER */
 window.addEventListener('load', () => {
   setTimeout(() => {
     document.getElementById('loader').classList.add('done');
-    Sound.levelup();
-  }, 1400);
+  }, 1200);
 });
 
-/* 2. SOUND TOGGLE */
-const soundBtn = document.getElementById('sound-toggle');
-const soundLabel = document.getElementById('sound-label');
-const soundIcon = document.getElementById('sound-icon');
-let soundOn = true;
-soundBtn.addEventListener('click', () => {
-  soundOn = !soundOn;
-  Sound.toggle(soundOn);
-  soundLabel.textContent = 'SOUND ' + (soundOn ? 'ON' : 'OFF');
-  soundIcon.textContent = soundOn ? '♪' : '♫';
-  if (soundOn) Sound.click();
-});
-document.addEventListener('click', () => Sound.click(), { once: true });
-
-/* 3. SCROLL PROGRESS + HERO DNA FADE/EXPAND */
-const progress = document.getElementById('scroll-progress');
-const heroBackdrop = document.querySelector('.hero-backdrop');
-window.addEventListener('scroll', () => {
-  const h = document.documentElement;
-  progress.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100 + '%';
-  // Hero DNA: expand 1x → 1.45x as you scroll the hero, then fade to 0 by 1.1 * viewport
-  if (heroBackdrop) {
-    const vh = window.innerHeight || 800;
-    const p = Math.min(1, Math.max(0, h.scrollTop / vh));
-    const scale = 1 + p * 0.45;
-    const opacity = Math.max(0, 1 - Math.pow(p, 1.3));
-    heroBackdrop.style.transform = `scale(${scale})`;
-    heroBackdrop.style.opacity = opacity;
+/* 2. SCROLL PROGRESS + HERO BACKDROP — throttled with rAF */
+(function smoothScroll() {
+  const progress = document.getElementById('scroll-progress');
+  const heroBackdrop = document.querySelector('.hero-backdrop');
+  let ticking = false;
+  function update() {
+    const h = document.documentElement;
+    progress.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100 + '%';
+    if (heroBackdrop) {
+      const vh = window.innerHeight || 800;
+      const p = Math.min(1, Math.max(0, h.scrollTop / vh));
+      const scale = 1 + p * 0.45;
+      const opacity = Math.max(0, 1 - Math.pow(p, 1.3));
+      heroBackdrop.style.transform = `scale(${scale})`;
+      heroBackdrop.style.opacity = opacity;
+    }
+    ticking = false;
   }
-});
+  window.addEventListener('scroll', () => {
+    if (!ticking) { requestAnimationFrame(update); ticking = true; }
+  }, { passive: true });
+})();
 
-/* 4. MINIMAL CURSOR SPOT */
-const spot = document.getElementById('cursor-spot');
-document.addEventListener('mousemove', e => {
-  spot.style.left = e.clientX + 'px';
-  spot.style.top  = e.clientY + 'px';
-});
-document.querySelectorAll('a, button, .amino-card, .letter-cell, .dpad-btn, .btn-a, .btn-b, .helix-base, .mut-card, .stat, .title-word').forEach(el => {
-  el.addEventListener('mouseenter', () => spot.classList.add('active'));
-  el.addEventListener('mouseleave', () => spot.classList.remove('active'));
-});
+/* 3. SMOOTH CURSOR SPOT — lerp */
+(function cursorLerp() {
+  const spot = document.getElementById('cursor-spot');
+  let tx = window.innerWidth / 2, ty = window.innerHeight / 2;
+  let x = tx, y = ty;
+  document.addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; });
+  function loop() {
+    x += (tx - x) * 0.22;
+    y += (ty - y) * 0.22;
+    spot.style.left = x + 'px';
+    spot.style.top  = y + 'px';
+    requestAnimationFrame(loop);
+  }
+  loop();
+  document.querySelectorAll('a, button, .letter-cell, .dpad-btn, .btn-a, .btn-b, .mut-card, .stat, .title-word').forEach(el => {
+    el.addEventListener('mouseenter', () => spot.classList.add('active'));
+    el.addEventListener('mouseleave', () => spot.classList.remove('active'));
+  });
+})();
 
-/* 5. PARTICLES */
-const particlesRoot = document.getElementById('particles');
-const palette = { A: '#ff3b4c', T: '#3277ff', C: '#30d68a', G: '#ffd23b', U: '#b44dff' };
-function spawnParticle() {
-  const letters = Object.keys(palette);
-  const l = letters[Math.floor(Math.random() * letters.length)];
-  const el = document.createElement('div');
-  el.className = 'particle';
-  el.textContent = l;
-  el.style.color = palette[l];
-  el.style.left = Math.random() * 100 + '%';
-  el.style.fontSize = (10 + Math.random() * 18) + 'px';
-  el.style.animationDuration = (14 + Math.random() * 20) + 's';
-  el.style.animationDelay = (-Math.random() * 20) + 's';
-  particlesRoot.appendChild(el);
-  setTimeout(() => el.remove(), 35000);
-}
-for (let i = 0; i < 35; i++) spawnParticle();
-setInterval(spawnParticle, 1000);
+/* 4. PARTICLES */
+(function particles() {
+  const particlesRoot = document.getElementById('particles');
+  const palette = { A: '#ff3b4c', T: '#3277ff', C: '#30d68a', G: '#ffd23b', U: '#b44dff' };
+  function spawnParticle() {
+    const letters = Object.keys(palette);
+    const l = letters[Math.floor(Math.random() * letters.length)];
+    const el = document.createElement('div');
+    el.className = 'particle';
+    el.textContent = l;
+    el.style.color = palette[l];
+    el.style.left = Math.random() * 100 + '%';
+    el.style.fontSize = (10 + Math.random() * 18) + 'px';
+    el.style.animationDuration = (14 + Math.random() * 20) + 's';
+    el.style.animationDelay = (-Math.random() * 20) + 's';
+    particlesRoot.appendChild(el);
+    setTimeout(() => el.remove(), 35000);
+  }
+  for (let i = 0; i < 35; i++) spawnParticle();
+  setInterval(spawnParticle, 1200);
+})();
 
-/* 6. THREE.JS 3D DNA */
+/* 5. THREE.JS 3D DNA HERO */
 (function initThreeDNA() {
   const mount = document.getElementById('three-dna');
   if (!mount || typeof THREE === 'undefined') return;
-
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x05060d, 40, 140);
   const camera = new THREE.PerspectiveCamera(55, mount.clientWidth / mount.clientHeight, 0.1, 500);
@@ -979,44 +732,35 @@ setInterval(spawnParticle, 1000);
   renderer.setSize(mount.clientWidth, mount.clientHeight);
   renderer.setClearColor(0x000000, 0);
   mount.appendChild(renderer.domElement);
-
   scene.add(new THREE.AmbientLight(0x8899ff, 0.6));
   const dir1 = new THREE.DirectionalLight(0xffffff, 0.8); dir1.position.set(20, 20, 30); scene.add(dir1);
   const pl1 = new THREE.PointLight(0x7cf9ff, 1.2, 120); pl1.position.set(-20, 10, 10); scene.add(pl1);
   const pl2 = new THREE.PointLight(0xb44dff, 1.0, 120); pl2.position.set(20, -20, 10); scene.add(pl2);
-
   const dna = new THREE.Group();
   scene.add(dna);
-
   const PAIR_COUNT = 110, HELIX_RADIUS = 9, PAIR_SPACING = 1.6, TWIST = Math.PI / 5;
   const totalHeight = PAIR_COUNT * PAIR_SPACING;
   const colors = { A: 0xff3b4c, T: 0x3277ff, C: 0x30d68a, G: 0xffd23b };
   const pairs = [['A','T'], ['G','C'], ['T','A'], ['C','G'], ['A','T'], ['T','A'], ['G','C'], ['C','G']];
-
   const sphereGeo = new THREE.SphereGeometry(0.9, 20, 16);
   const backboneGeo = new THREE.SphereGeometry(0.35, 12, 10);
   const rungGeo = new THREE.CylinderGeometry(0.1, 0.1, HELIX_RADIUS * 2 - 1.8, 8);
   rungGeo.rotateZ(Math.PI / 2);
-
   for (let i = 0; i < PAIR_COUNT; i++) {
     const y = -totalHeight / 2 + i * PAIR_SPACING;
     const angle = i * TWIST;
     const [b1, b2] = pairs[i % pairs.length];
-
     const rung = new THREE.Mesh(rungGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, emissive: 0xffffff, emissiveIntensity: 0.1 }));
     rung.position.set(0, y, 0); rung.rotation.y = angle;
     dna.add(rung);
-
     const mat1 = new THREE.MeshStandardMaterial({ color: colors[b1], emissive: colors[b1], emissiveIntensity: 0.6, roughness: 0.35, metalness: 0.1 });
     const base1 = new THREE.Mesh(sphereGeo, mat1);
     base1.position.set(Math.cos(angle) * HELIX_RADIUS, y, Math.sin(angle) * HELIX_RADIUS);
     dna.add(base1);
-
     const mat2 = new THREE.MeshStandardMaterial({ color: colors[b2], emissive: colors[b2], emissiveIntensity: 0.6, roughness: 0.35, metalness: 0.1 });
     const base2 = new THREE.Mesh(sphereGeo, mat2);
     base2.position.set(-Math.cos(angle) * HELIX_RADIUS, y, -Math.sin(angle) * HELIX_RADIUS);
     dna.add(base2);
-
     if (i > 0) {
       const prev = (i - 1) * TWIST;
       const prevY = y - PAIR_SPACING;
@@ -1034,8 +778,6 @@ setInterval(spawnParticle, 1000);
       }
     }
   }
-
-  // Floating free nucleotides
   const floaters = [];
   for (let i = 0; i < 24; i++) {
     const letters = Object.keys(colors);
@@ -1046,29 +788,30 @@ setInterval(spawnParticle, 1000);
     s.userData = { vy: (Math.random() - 0.5) * 0.03, vx: (Math.random() - 0.5) * 0.02 };
     scene.add(s); floaters.push(s);
   }
-
   window.addEventListener('resize', () => {
     camera.aspect = mount.clientWidth / mount.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(mount.clientWidth, mount.clientHeight);
   });
-
   let mx = 0, my = 0, lastScroll = 0;
   window.addEventListener('mousemove', e => {
     mx = (e.clientX / window.innerWidth - 0.5) * 2;
     my = (e.clientY / window.innerHeight - 0.5) * 2;
   });
-  window.addEventListener('scroll', () => { lastScroll = window.scrollY; });
-
+  window.addEventListener('scroll', () => { lastScroll = window.scrollY; }, { passive: true });
   const clock = new THREE.Clock();
+  let tgtRotZ = 0, tgtRotX = 0, rotZ = 0, rotX = 0;
   function animate() {
     const dt = clock.getDelta();
     const t = clock.getElapsedTime();
     dna.rotation.y += dt * 0.3;
     dna.rotation.y += lastScroll * 0.00005;
     dna.position.y = Math.sin(t * 0.6) * 0.6;
-    dna.rotation.z = mx * 0.15;
-    dna.rotation.x = my * 0.1;
+    tgtRotZ = mx * 0.15; tgtRotX = my * 0.1;
+    rotZ += (tgtRotZ - rotZ) * 0.08;
+    rotX += (tgtRotX - rotX) * 0.08;
+    dna.rotation.z = rotZ;
+    dna.rotation.x = rotX;
     floaters.forEach(f => {
       f.position.y += f.userData.vy;
       f.position.x += f.userData.vx;
@@ -1081,19 +824,18 @@ setInterval(spawnParticle, 1000);
   animate();
 })();
 
-/* 7. REVEAL + count-up trigger */
+/* 6. REVEAL + count-up trigger */
 const io = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (e.isIntersecting) {
       e.target.classList.add('visible');
-      if (e.target.classList.contains('section-heading')) Sound.whoosh();
       if (e.target.classList.contains('stat')) startCount(e.target);
     }
   });
 }, { threshold: 0.15 });
 document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-/* 8. COUNT-UP */
+/* 7. COUNT-UP */
 const counted = new WeakSet();
 function startCount(stat) {
   if (counted.has(stat)) return;
@@ -1101,42 +843,27 @@ function startCount(stat) {
   const numEl = stat.querySelector('.stat-num');
   if (!numEl) return;
   const target = parseInt(numEl.dataset.count, 10);
-  const duration = 1600;
+  const duration = 1400;
   const start = performance.now();
-  function fmt(v) {
-    if (target >= 1e9) return (v / 1e9).toFixed(1) + 'B';
-    if (target >= 1e6) return (v / 1e6).toFixed(0) + 'M';
-    if (target >= 1e3) return v.toLocaleString();
-    return v.toString();
-  }
   function tick(now) {
     const p = Math.min(1, (now - start) / duration);
     const eased = 1 - Math.pow(1 - p, 3);
-    numEl.textContent = fmt(Math.floor(eased * target));
+    numEl.textContent = Math.floor(eased * target).toString();
     if (p < 1) requestAnimationFrame(tick);
-    else numEl.textContent = fmt(target);
+    else numEl.textContent = target.toString();
   }
   requestAnimationFrame(tick);
 }
 
-/* 9. NAVBAR */
+/* 8. NAVBAR */
 const navbar = document.querySelector('.navbar');
-window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 40));
+window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 40), { passive: true });
 
-/* 10. PARALLAX */
-const parallax = document.querySelector('.parallax-bg');
-window.addEventListener('scroll', () => {
-  if (!parallax) return;
-  const rect = parallax.getBoundingClientRect();
-  parallax.style.transform = `translateY(${(rect.top - innerHeight / 2) * 0.25}px)`;
-});
-
-/* 11. LETTER GRID — all letters glitch on hover */
+/* 9. LETTER GRID — all letters glitch on hover (no sound) */
 (function buildLetterGrid() {
   const grid = document.getElementById('letter-grid');
   const letters = ['A', 'T', 'C', 'G', 'U'];
   const cols = 16, rows = 6;
-
   function glitchCell(cell, origLetter) {
     if (cell.dataset.glitching === '1') return;
     cell.dataset.glitching = '1';
@@ -1144,7 +871,6 @@ window.addEventListener('scroll', () => {
     let i = 0;
     const iv = setInterval(() => {
       cell.textContent = letters[Math.floor(Math.random() * letters.length)];
-      Sound.glitch();
       i++;
       if (i > 8) {
         clearInterval(iv);
@@ -1154,7 +880,6 @@ window.addEventListener('scroll', () => {
       }
     }, 45);
   }
-
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const letter = letters[Math.floor(Math.random() * letters.length)];
@@ -1162,99 +887,14 @@ window.addEventListener('scroll', () => {
       cell.className = 'letter-cell ' + letter;
       cell.textContent = letter;
       cell.style.animationDelay = ((r * cols + c) * 0.015) + 's';
-      cell.addEventListener('mouseenter', () => { glitchCell(cell, letter); Sound['letter' + letter](); });
-      cell.addEventListener('click', () => { Sound.click(); glitchCell(cell, letter); });
+      cell.addEventListener('mouseenter', () => { glitchCell(cell, letter); });
+      cell.addEventListener('click', () => { glitchCell(cell, letter); });
       grid.appendChild(cell);
     }
   }
 })();
 
-/* 12. HELIX DEMO */
-(function buildHelixDemo() {
-  const root = document.getElementById('helix-demo');
-  if (!root) return;
-  const seq = ['A','T','G','C','T','A','C','G','A','T','G','C','T','A'];
-  const pair = { A:'T', T:'A', C:'G', G:'C' };
-  seq.forEach((b, i) => {
-    const rung = document.createElement('div');
-    rung.className = 'helix-rung';
-    rung.style.top = (10 + i * 28) + 'px';
-    rung.innerHTML = `
-      <div class="helix-base ${b}">${b}</div>
-      <div class="helix-bond"></div>
-      <div class="helix-base ${pair[b]}">${pair[b]}</div>
-    `;
-    rung.addEventListener('mouseenter', () => Sound.bond());
-    root.appendChild(rung);
-  });
-  window.addEventListener('scroll', () => {
-    const rect = root.getBoundingClientRect();
-    if (rect.bottom < 0 || rect.top > innerHeight) return;
-    const t = (innerHeight - rect.top) / (innerHeight + rect.height);
-    root.querySelectorAll('.helix-rung').forEach((rung, i) => {
-      const phase = i * 0.4 + t * Math.PI * 3;
-      rung.style.transform = `scaleX(${Math.abs(Math.cos(phase)) * 0.7 + 0.3})`;
-    });
-  });
-})();
-
-/* 13. MAZE */
-(function buildMaze() {
-  const maze = document.getElementById('maze-grid');
-  if (!maze) return;
-  const layout = [
-    'M.........',
-    'W.WW.WWWWW',
-    'W..W..E..W',
-    '.EW.WWWW.W',
-    '.$W......W',
-    '.W.WWWWW.W',
-    '.W.W.E.W.W',
-    '.W.W.$.W.W',
-    '.W.WWW.W..',
-    '.........G'
-  ];
-  for (let r = 0; r < 10; r++) {
-    for (let c = 0; c < 10; c++) {
-      const cell = document.createElement('div');
-      cell.className = 'maze-cell';
-      const ch = layout[r][c];
-      if (ch === 'W') cell.classList.add('wall');
-      if (ch === 'E') cell.classList.add('enzyme');
-      if (ch === '$') cell.classList.add('energy');
-      if (ch === 'G') cell.classList.add('goal');
-      if (ch === 'M') cell.classList.add('mrna');
-      maze.appendChild(cell);
-    }
-  }
-  const path = [
-    [0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[2,4],[2,5],[3,5],[3,6],[3,7],
-    [4,7],[5,7],[6,7],[7,7],[8,7],[8,8],[8,9],[9,9]
-  ];
-  let idx = 0;
-  setInterval(() => {
-    maze.querySelectorAll('.mrna').forEach(c => c.classList.remove('mrna'));
-    const [r, c] = path[idx % path.length];
-    const target = maze.children[r * 10 + c];
-    target.classList.add('mrna');
-    idx++;
-    if (target.classList.contains('energy')) Sound.energy();
-  }, 600);
-})();
-
-/* 14. CODON INTERACTION */
-document.querySelectorAll('.amino-card').forEach(card => {
-  card.addEventListener('click', () => {
-    const ok = card.hasAttribute('data-correct');
-    card.classList.remove('correct', 'wrong');
-    void card.offsetWidth;
-    if (ok) { card.classList.add('correct'); Sound.correct(); }
-    else { card.classList.add('wrong'); Sound.wrong(); }
-    setTimeout(() => card.classList.remove('correct', 'wrong'), 600);
-  });
-});
-
-/* 15. HEALTH */
+/* 10. HEALTH DEMO (no sound) */
 (function healthDemo() {
   let health = 100;
   const fill = document.querySelector('.health-bar-fill');
@@ -1269,17 +909,16 @@ document.querySelectorAll('.amino-card').forEach(card => {
     else { cell.style.animationDuration = '3s'; cell.style.borderColor = 'rgba(124, 249, 255, 0.3)'; }
   }
   dmg.addEventListener('click', () => {
-    health = Math.max(0, health - 15); update(); Sound.wrong();
+    health = Math.max(0, health - 15); update();
     cell.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1) translateX(-6px)' }, { transform: 'scale(1) translateX(6px)' }, { transform: 'scale(1)' }], { duration: 400 });
-    if (health <= 0) { Sound.whoosh(); setTimeout(() => { health = 100; update(); }, 1000); }
+    if (health <= 0) { setTimeout(() => { health = 100; update(); }, 1000); }
   });
-  heal.addEventListener('click', () => { health = Math.min(100, health + 10); update(); Sound.correct(); });
+  heal.addEventListener('click', () => { health = Math.min(100, health + 10); update(); });
 })();
 
-/* 16. TITLE-WORD GLITCH */
+/* 11. TITLE-WORD GLITCH (no sound) */
 document.querySelectorAll('.title-word').forEach(w => {
   w.addEventListener('mouseenter', () => {
-    Sound.glitch();
     const orig = w.textContent;
     const chars = 'ATCGU';
     let i = 0;
@@ -1291,46 +930,7 @@ document.querySelectorAll('.title-word').forEach(w => {
   });
 });
 
-/* 17. PINNED HORIZONTAL SCROLL */
-(function pinnedScroll() {
-  const section = document.getElementById('pinned');
-  const track = section ? section.querySelector('.pinned-track') : null;
-  if (!section || !track) return;
-  if (window.innerWidth <= 720) return;
-  function onScroll() {
-    const rect = section.getBoundingClientRect();
-    const total = section.offsetHeight - window.innerHeight;
-    if (rect.top > 0) { track.style.transform = 'translateX(0)'; return; }
-    if (rect.bottom < window.innerHeight) { track.style.transform = `translateX(-${300}vw)`; return; }
-    const progress = Math.min(1, Math.max(0, -rect.top / total));
-    track.style.transform = `translateX(-${progress * 300}vw)`;
-  }
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
-})();
-
-/* 18. GAMEPAD SOUNDS */
-document.querySelectorAll('.dpad-btn').forEach(b => b.addEventListener('click', Sound.click));
-document.querySelector('.btn-a').addEventListener('click', () => Sound.correct());
-document.querySelector('.btn-b').addEventListener('click', () => Sound.bond());
-
-/* 19. POLYMERASE CLICK */
-const polyTrack = document.querySelector('.poly-track');
-if (polyTrack) {
-  polyTrack.addEventListener('click', () => {
-    const droplet = document.getElementById('poly-droplet');
-    const dRect = droplet.getBoundingClientRect();
-    const dCenter = dRect.left + dRect.width / 2;
-    const pRect = polyTrack.querySelector('.poly-promoter').getBoundingClientRect();
-    if (dCenter > pRect.left && dCenter < pRect.right) {
-      Sound.correct();
-      droplet.animate([{ transform: 'scale(1)', filter: 'hue-rotate(0deg)' }, { transform: 'scale(2)', filter: 'hue-rotate(180deg)' }, { transform: 'scale(1)', filter: 'hue-rotate(0deg)' }], { duration: 600 });
-    } else Sound.wrong();
-  });
-}
-
 console.log('%cCELL STUDIO — DNA: Code of Life', 'color:#7cf9ff;font-weight:bold;font-size:14px;letter-spacing:4px;');
 </script>
-
 </body>
 </html>
