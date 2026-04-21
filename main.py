@@ -1,234 +1,476 @@
-# ============================================================
-#  DNA: THE CODE OF LIFE
-#  An educational biology game for Microsoft MakeCode Arcade
+# ==============================================================
+#  DNA: CODE OF LIFE  —  v2 FULL REWRITE
+#  Educational biology adventure for Microsoft MakeCode Arcade
 #  https://arcade.makecode.com/
 #
 #  HOW TO IMPORT:
-#    1. Go to https://arcade.makecode.com/
-#    2. Click "New Project"
-#    3. Switch language from Blocks to PYTHON (top right)
-#    4. Paste the ENTIRE contents of this file into the editor
-#    5. Press the play button to run
+#    1. Open https://arcade.makecode.com/ and click "New Project"
+#    2. Top-right, switch language from Blocks to PYTHON
+#    3. Paste this ENTIRE file
+#    4. Press the green play button
 #
-#  LEVELS:
-#    1 - DNA BUILDING   : Match the complementary base pairs (A-T, C-G)
-#    2 - TRANSCRIPTION  : Drop RNA polymerase onto the promoter zone
-#    3 - mRNA MAZE      : Dodge enzymes and collect energy
-#    4 - TRANSLATION    : Choose the right amino acid for each codon
+#  LEVELS (harder, meaner, more fun):
+#    L1 - DNA BUILDING      Drag & drop nucleotides into the template
+#                           strand with a cursor. Hydrogen bonds snap
+#                           closed on correct pairs (2 for A-T, 3 for
+#                           C-G). Mutations damage the cell; 3 triggers
+#                           "DNA DAMAGE DETECTED" and the strand
+#                           collapses. 60s timer before degradation.
 #
-#  GLOBAL LOSE MECHANIC:
-#    A Cell Health bar tracks mistakes across every level.
-#    Zero health = cell death.
-# ============================================================
+#    L2 - TRANSCRIPTION     A fast-moving RNA polymerase droplet
+#                           oscillates above the DNA, accelerating
+#                           with every attempt. Drop it onto the
+#                           glowing TATA promoter with A. Miss too
+#                           many times and transcription shuts down.
+#                           On success: strands split, mRNA auto-builds.
+#
+#    L3 - mRNA MAZE         Real tile maze. Collect energy orbs,
+#                           dodge chasing RNase enzymes, touch SAFE
+#                           ZONES to stabilize (buys time), reach the
+#                           ribosome with enough energy. Timer ticks
+#                           down; three hits = mRNA degraded.
+#
+#  GLOBAL:
+#    One shared Cell Health bar (info.set_life). Every mistake in
+#    every level hits the same bar. Zero = game over.
+# ==============================================================
 
-# ---------- GLOBAL STATE ----------
-current_level = 0
-cell_health = 100
-mutations = 0
-energy = 0
-score = 0
-game_running = False
-game_active_sprite = None
-paused_input = False
 
-# ---------- COLOR / LETTER MAPPING ----------
-# A=red   T=blue   C=green   G=yellow   U=purple
-# This links each letter to a color across the whole game
-A_COLOR = 2   # red
-T_COLOR = 8   # blue
-C_COLOR = 7   # green
-G_COLOR = 5   # yellow
-U_COLOR = 11  # purple
+# ==============================================================
+#  1. COLOR / LETTER MAPPING
+# ==============================================================
+# MakeCode Arcade palette indices
+A_COLOR = 2    # red      - adenine
+T_COLOR = 9    # blue     - thymine
+C_COLOR = 7    # green    - cytosine
+G_COLOR = 5    # yellow   - guanine
+U_COLOR = 11   # purple   - uracil
+INK_COLOR = 1  # white
+DARK_BG  = 15  # black
+GLOW     = 9   # light blue accent
 
-# ---------- PIXEL ART IMAGES ----------
-# Each nucleotide is drawn as a tiny sprite of the right color
 
-def nucleotide_img(letter):
+# ==============================================================
+#  2. PIXEL ART — NUCLEOTIDES & GAME PIECES
+# ==============================================================
+# Larger 10x10 nucleotides for better readability
+
+def nuc_img(letter):
     if letter == "A":
         return img("""
-            . . 2 2 2 2 . .
-            . 2 2 2 2 2 2 .
-            2 2 1 2 2 1 2 2
-            2 2 2 2 2 2 2 2
-            2 2 1 1 1 1 2 2
-            2 2 2 2 2 2 2 2
-            . 2 2 2 2 2 2 .
-            . . 2 2 2 2 . .
+            . . 2 2 2 2 2 2 . .
+            . 2 2 2 2 2 2 2 2 .
+            2 2 1 1 2 2 1 1 2 2
+            2 2 1 1 2 2 1 1 2 2
+            2 2 2 2 2 2 2 2 2 2
+            2 2 1 1 1 1 1 1 2 2
+            2 2 1 1 1 1 1 1 2 2
+            2 2 2 2 2 2 2 2 2 2
+            . 2 2 2 2 2 2 2 2 .
+            . . 2 2 2 2 2 2 . .
         """)
     if letter == "T":
         return img("""
-            . . 8 8 8 8 . .
-            . 8 8 8 8 8 8 .
-            8 8 1 8 8 1 8 8
-            8 8 8 8 8 8 8 8
-            8 8 1 1 1 1 8 8
-            8 8 8 8 8 8 8 8
-            . 8 8 8 8 8 8 .
-            . . 8 8 8 8 . .
+            . . 9 9 9 9 9 9 . .
+            . 9 9 9 9 9 9 9 9 .
+            9 9 1 1 9 9 1 1 9 9
+            9 9 1 1 9 9 1 1 9 9
+            9 9 9 9 9 9 9 9 9 9
+            9 9 1 1 1 1 1 1 9 9
+            9 9 1 1 1 1 1 1 9 9
+            9 9 9 9 9 9 9 9 9 9
+            . 9 9 9 9 9 9 9 9 .
+            . . 9 9 9 9 9 9 . .
         """)
     if letter == "C":
         return img("""
-            . . 7 7 7 7 . .
-            . 7 7 7 7 7 7 .
-            7 7 1 7 7 1 7 7
-            7 7 7 7 7 7 7 7
-            7 7 1 1 1 1 7 7
-            7 7 7 7 7 7 7 7
-            . 7 7 7 7 7 7 .
-            . . 7 7 7 7 . .
+            . . 7 7 7 7 7 7 . .
+            . 7 7 7 7 7 7 7 7 .
+            7 7 1 1 7 7 1 1 7 7
+            7 7 1 1 7 7 1 1 7 7
+            7 7 7 7 7 7 7 7 7 7
+            7 7 1 1 1 1 1 1 7 7
+            7 7 1 1 1 1 1 1 7 7
+            7 7 7 7 7 7 7 7 7 7
+            . 7 7 7 7 7 7 7 7 .
+            . . 7 7 7 7 7 7 . .
         """)
     if letter == "G":
         return img("""
-            . . 5 5 5 5 . .
-            . 5 5 5 5 5 5 .
-            5 5 1 5 5 1 5 5
-            5 5 5 5 5 5 5 5
-            5 5 1 1 1 1 5 5
-            5 5 5 5 5 5 5 5
-            . 5 5 5 5 5 5 .
-            . . 5 5 5 5 . .
+            . . 5 5 5 5 5 5 . .
+            . 5 5 5 5 5 5 5 5 .
+            5 5 1 1 5 5 1 1 5 5
+            5 5 1 1 5 5 1 1 5 5
+            5 5 5 5 5 5 5 5 5 5
+            5 5 1 1 1 1 1 1 5 5
+            5 5 1 1 1 1 1 1 5 5
+            5 5 5 5 5 5 5 5 5 5
+            . 5 5 5 5 5 5 5 5 .
+            . . 5 5 5 5 5 5 . .
         """)
     # U (RNA)
     return img("""
+        . . 11 11 11 11 11 11 . .
+        . 11 11 11 11 11 11 11 11 .
+        11 11 1 1 11 11 1 1 11 11
+        11 11 1 1 11 11 1 1 11 11
+        11 11 11 11 11 11 11 11 11 11
+        11 11 1 1 1 1 1 1 11 11
+        11 11 1 1 1 1 1 1 11 11
+        11 11 11 11 11 11 11 11 11 11
+        . 11 11 11 11 11 11 11 11 .
+        . . 11 11 11 11 11 11 . .
+    """)
+
+# Slot outline (empty slot in template strand)
+def slot_empty_img():
+    return img("""
+        1 1 1 1 1 1 1 1 1 1
+        1 . . . . . . . . 1
+        1 . . . . . . . . 1
+        1 . . . . . . . . 1
+        1 . . . . . . . . 1
+        1 . . . . . . . . 1
+        1 . . . . . . . . 1
+        1 . . . . . . . . 1
+        1 . . . . . . . . 1
+        1 1 1 1 1 1 1 1 1 1
+    """)
+
+# Target letter dimmed outline (shows what letter is expected)
+def slot_target_img(letter):
+    if letter == "A":
+        return img("""
+            1 1 1 1 1 1 1 1 1 1
+            1 . 2 2 2 2 2 2 . 1
+            1 2 . . . . . . 2 1
+            1 2 . . 2 2 . . 2 1
+            1 2 . . . . . . 2 1
+            1 2 . 2 2 2 2 . 2 1
+            1 2 . . . . . . 2 1
+            1 2 . . . . . . 2 1
+            1 . 2 2 2 2 2 2 . 1
+            1 1 1 1 1 1 1 1 1 1
+        """)
+    if letter == "T":
+        return img("""
+            1 1 1 1 1 1 1 1 1 1
+            1 . 9 9 9 9 9 9 . 1
+            1 9 . . . . . . 9 1
+            1 9 . . 9 9 . . 9 1
+            1 9 . . . . . . 9 1
+            1 9 . 9 9 9 9 . 9 1
+            1 9 . . . . . . 9 1
+            1 9 . . . . . . 9 1
+            1 . 9 9 9 9 9 9 . 1
+            1 1 1 1 1 1 1 1 1 1
+        """)
+    if letter == "C":
+        return img("""
+            1 1 1 1 1 1 1 1 1 1
+            1 . 7 7 7 7 7 7 . 1
+            1 7 . . . . . . 7 1
+            1 7 . . 7 7 . . 7 1
+            1 7 . . . . . . 7 1
+            1 7 . 7 7 7 7 . 7 1
+            1 7 . . . . . . 7 1
+            1 7 . . . . . . 7 1
+            1 . 7 7 7 7 7 7 . 1
+            1 1 1 1 1 1 1 1 1 1
+        """)
+    # G
+    return img("""
+        1 1 1 1 1 1 1 1 1 1
+        1 . 5 5 5 5 5 5 . 1
+        1 5 . . . . . . 5 1
+        1 5 . . 5 5 . . 5 1
+        1 5 . . . . . . 5 1
+        1 5 . 5 5 5 5 . 5 1
+        1 5 . . . . . . 5 1
+        1 5 . . . . . . 5 1
+        1 . 5 5 5 5 5 5 . 1
+        1 1 1 1 1 1 1 1 1 1
+    """)
+
+# Player cursor / hand
+def cursor_img():
+    return img("""
+        . . 1 1 1 1 . . .
+        . 1 . . . . 1 . .
+        1 . . . . . . 1 .
+        1 . . 9 9 . . 1 .
+        1 . . 9 9 . . 1 .
+        1 . . . . . . 1 .
+        . 1 . . . . 1 . .
+        . . 1 1 1 1 . . .
+        . . . 1 1 . . . .
+    """)
+
+# Yellow "YOU" label that floats above the player sprite
+def you_label_img():
+    # 15x7 pixel-art "YOU" in color 5 (yellow) with black outline
+    return img("""
+        5 . 5 . 5 5 5 . 5 5 5
+        5 . 5 . 5 . 5 . 5 . 5
+        5 . 5 . 5 . 5 . 5 . 5
+        . 5 . . 5 . 5 . 5 . 5
+        . 5 . . 5 . 5 . 5 . 5
+        . 5 . . 5 . 5 . 5 . 5
+        . 5 . . 5 5 5 . 5 5 5
+    """)
+
+# Hydrogen bond (small dots)
+def bond_dot_img():
+    return img("""
+        1 1
+        1 1
+    """)
+
+# H-bond line between paired bases
+def bond_line_img():
+    return img("""
+        1 1 1 1 1 1 1 1 1 1 1 1
+    """)
+
+# RNA polymerase droplet (moving object in Level 2)
+def droplet_img():
+    return img("""
+        . . . 11 11 . . .
         . . 11 11 11 11 . .
-        . 11 11 11 11 11 11 .
-        11 11 1 11 11 1 11 11
-        11 11 11 11 11 11 11 11
+        . 11 11 1 1 11 11 .
         11 11 1 1 1 1 11 11
-        11 11 11 11 11 11 11 11
-        . 11 11 11 11 11 11 .
-        . . 11 11 11 11 . .
-    """)
-
-def polymerase_img():
-    return img("""
-        . . 4 4 4 4 . .
-        . 4 4 4 4 4 4 .
-        4 4 4 1 1 4 4 4
-        4 4 1 4 4 1 4 4
-        4 4 1 4 4 1 4 4
-        4 4 4 1 1 4 4 4
-        . 4 4 4 4 4 4 .
-        . . 4 4 4 4 . .
-    """)
-
-def mrna_img():
-    return img("""
-        . 11 11 . . 11 11 .
-        11 11 11 11 11 11 11 11
         11 11 1 11 11 1 11 11
         11 11 11 11 11 11 11 11
         . 11 11 11 11 11 11 .
         . . 11 11 11 11 . .
+        . . . 11 11 . . .
     """)
 
-def enzyme_img():
+# DNA strand piece (for Level 2 background)
+def strand_piece_top():
     return img("""
-        . 10 10 10 10 10 10 .
-        10 1 1 10 10 1 1 10
-        10 1 1 10 10 1 1 10
-        10 10 10 10 10 10 10 10
-        10 10 1 10 10 1 10 10
-        10 10 10 1 1 10 10 10
-        . 10 10 10 10 10 10 .
-        . . 10 10 10 10 . .
+        8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
+        8 1 1 1 1 1 1 1 1 1 1 1 1 1 1 8
+        8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
     """)
 
-def energy_img():
+def strand_piece_bot():
+    return img("""
+        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+        2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2
+        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+    """)
+
+# TATA promoter box (glowing zone)
+def tata_img():
+    return img("""
+        5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5
+        5 1 1 1 5 5 1 5 1 1 1 5 5 5 1 5 5 5 5 5
+        5 1 5 5 5 5 1 5 5 1 5 5 5 1 5 1 5 5 5 5
+        5 1 1 1 5 5 1 5 5 1 5 5 5 1 5 1 5 5 5 5
+        5 1 5 5 5 5 1 5 5 1 5 5 5 1 1 1 5 5 5 5
+        5 1 5 5 5 5 1 5 5 1 5 5 5 1 5 1 5 5 5 5
+        5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5
+    """)
+
+# Aim arrow (shown when trying to drop droplet)
+def aim_line_img():
+    return img("""
+        1
+        1
+        1
+        1
+        1
+        1
+    """)
+
+# mRNA player (Level 3)
+def mrna_player_img():
+    return img("""
+        . 11 11 11 11 11 11 .
+        11 1 11 11 11 11 1 11
+        11 11 1 11 11 1 11 11
+        11 11 11 1 1 11 11 11
+        11 11 11 1 1 11 11 11
+        11 11 1 11 11 1 11 11
+        11 1 11 11 11 11 1 11
+        . 11 11 11 11 11 11 .
+    """)
+
+# RNase enzyme (Level 3 enemy)
+def rnase_img():
+    return img("""
+        . 2 2 2 2 2 2 .
+        2 1 . 2 2 . 1 2
+        2 . 2 2 2 2 . 2
+        2 2 2 1 1 2 2 2
+        2 2 2 1 1 2 2 2
+        2 . 2 2 2 2 . 2
+        2 1 . 2 2 . 1 2
+        . 2 2 2 2 2 2 .
+    """)
+
+# ATP energy orb
+def atp_img():
     return img("""
         . . 4 4 4 . .
         . 4 5 5 5 4 .
-        4 5 5 5 5 5 4
-        4 5 1 5 1 5 4
-        4 5 5 5 5 5 4
+        4 5 5 1 5 5 4
+        4 5 1 1 1 5 4
+        4 5 5 1 5 5 4
         . 4 5 5 5 4 .
         . . 4 4 4 . .
     """)
 
+# Ribosome (goal)
 def ribosome_img():
     return img("""
-        . 3 3 3 3 3 3 3 3 3 .
-        3 3 6 6 3 3 3 6 6 3 3
-        3 6 6 6 6 3 6 6 6 6 3
-        3 6 6 6 6 6 6 6 6 6 3
-        3 3 6 6 6 6 6 6 6 3 3
-        . 3 3 6 6 6 6 6 3 3 .
-        . . 3 3 6 6 6 3 3 . .
-        . . . 3 3 3 3 3 . . .
+        . 6 6 6 6 6 6 6 6 6 .
+        6 6 7 7 6 6 6 7 7 6 6
+        6 7 7 7 7 6 7 7 7 7 6
+        6 7 7 1 7 7 7 7 1 7 6
+        6 7 7 7 7 7 7 7 7 7 6
+        6 6 7 7 7 7 7 7 7 6 6
+        . 6 6 7 7 7 7 7 6 6 .
+        . . 6 6 7 7 7 6 6 . .
+        . . . 6 6 6 6 6 . . .
     """)
 
-def cell_img():
+# Wall tile (maze)
+def wall_img():
     return img("""
-        . . . 6 6 6 6 6 6 . . .
-        . 6 6 6 6 6 6 6 6 6 6 .
-        6 6 6 6 6 6 6 6 6 6 6 6
-        6 6 6 6 6 6 6 6 6 6 6 6
-        6 6 6 6 6 6 6 6 6 6 6 6
-        . 6 6 6 6 6 6 6 6 6 6 .
-        . . . 6 6 6 6 6 6 . . .
+        10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10
+        10 11 11 11 11 11 11 11 11 11 11 11 11 11 11 10
+        10 11 10 10 11 11 10 10 11 11 10 10 11 11 11 10
+        10 11 11 11 11 11 11 11 11 11 11 11 11 11 11 10
+        10 11 11 11 11 10 10 11 11 11 10 10 11 11 11 10
+        10 10 10 11 11 10 10 11 11 11 10 10 11 11 11 10
+        10 11 11 11 11 11 11 11 11 11 11 11 11 11 11 10
+        10 11 11 10 10 11 11 10 10 11 11 10 10 11 11 10
+        10 11 11 10 10 11 11 10 10 11 11 10 10 11 11 10
+        10 11 11 11 11 11 11 11 11 11 11 11 11 11 11 10
+        10 11 10 10 11 11 10 10 11 11 10 10 11 11 11 10
+        10 11 11 11 11 11 11 11 11 11 11 11 11 11 11 10
+        10 11 11 11 11 10 10 11 11 11 10 10 11 11 11 10
+        10 10 10 11 11 10 10 11 11 11 10 10 11 11 11 10
+        10 11 11 11 11 11 11 11 11 11 11 11 11 11 11 10
+        10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10
+    """)
+
+# Safe zone (Level 3 - heals mRNA / pauses timer)
+def safe_zone_img():
+    return img("""
+        6 6 6 6 6 6 6 6
+        6 1 6 6 6 6 1 6
+        6 6 1 6 6 1 6 6
+        6 6 6 1 1 6 6 6
+        6 6 6 1 1 6 6 6
+        6 6 1 6 6 1 6 6
+        6 1 6 6 6 6 1 6
+        6 6 6 6 6 6 6 6
     """)
 
 
-# ---------- SOUND EFFECTS ----------
-# MakeCode provides sound via music.play_melody and music.tone_playable
-# We build our own library of tiny effect phrases
+# ==============================================================
+#  3. GLOBAL STATE
+# ==============================================================
+current_level = 0
+cell_health   = 100
+score         = 0
+game_running  = False
 
+# Custom sprite kinds
+WALL_KIND      = SpriteKind.create()
+UI_KIND        = SpriteKind.create()
+HELD_KIND      = SpriteKind.create()
+SLOT_KIND      = SpriteKind.create()
+BOND_KIND      = SpriteKind.create()
+DROPLET_KIND   = SpriteKind.create()
+TATA_KIND      = SpriteKind.create()
+STRAND_KIND    = SpriteKind.create()
+SAFE_KIND      = SpriteKind.create()
+YOU_LABEL_KIND = SpriteKind.create()
+
+# Global "YOU" label sprite that follows the current player sprite
+you_label: Sprite = None
+
+
+# ==============================================================
+#  4. SOUND EFFECTS (non-blocking — never stalls the game)
+# ==============================================================
 def sfx_correct():
-    music.play(music.tone_playable(523, music.beat(BeatFraction.HALF)), music.PlaybackMode.IN_BACKGROUND)
-    music.play(music.tone_playable(784, music.beat(BeatFraction.HALF)), music.PlaybackMode.IN_BACKGROUND)
+    music.play(music.tone_playable(523, music.beat(BeatFraction.EIGHTH)),
+               music.PlaybackMode.IN_BACKGROUND)
+    music.play(music.tone_playable(784, music.beat(BeatFraction.EIGHTH)),
+               music.PlaybackMode.IN_BACKGROUND)
 
 def sfx_wrong():
-    music.play(music.tone_playable(196, music.beat(BeatFraction.QUARTER)), music.PlaybackMode.UNTIL_DONE)
-    music.play(music.tone_playable(147, music.beat(BeatFraction.QUARTER)), music.PlaybackMode.UNTIL_DONE)
+    music.play(music.tone_playable(196, music.beat(BeatFraction.QUARTER)),
+               music.PlaybackMode.IN_BACKGROUND)
+    music.play(music.tone_playable(147, music.beat(BeatFraction.QUARTER)),
+               music.PlaybackMode.IN_BACKGROUND)
 
 def sfx_bond():
-    music.play(music.tone_playable(880, music.beat(BeatFraction.EIGHTH)), music.PlaybackMode.IN_BACKGROUND)
+    music.play(music.tone_playable(880, music.beat(BeatFraction.EIGHTH)),
+               music.PlaybackMode.IN_BACKGROUND)
+
+def sfx_pickup():
+    music.play(music.tone_playable(659, music.beat(BeatFraction.SIXTEENTH)),
+               music.PlaybackMode.IN_BACKGROUND)
+
+def sfx_drop():
+    music.play(music.tone_playable(392, music.beat(BeatFraction.SIXTEENTH)),
+               music.PlaybackMode.IN_BACKGROUND)
 
 def sfx_energy():
-    music.play(music.tone_playable(1046, music.beat(BeatFraction.EIGHTH)), music.PlaybackMode.IN_BACKGROUND)
+    music.play(music.tone_playable(1046, music.beat(BeatFraction.EIGHTH)),
+               music.PlaybackMode.IN_BACKGROUND)
 
 def sfx_damage():
-    music.play(music.tone_playable(110, music.beat(BeatFraction.HALF)), music.PlaybackMode.UNTIL_DONE)
+    music.play(music.tone_playable(110, music.beat(BeatFraction.HALF)),
+               music.PlaybackMode.IN_BACKGROUND)
 
-def sfx_level_up():
-    music.play_melody("C5 E5 G5 C6", 200)
+def sfx_glitch():
+    music.play(music.tone_playable(70, music.beat(BeatFraction.SIXTEENTH)),
+               music.PlaybackMode.IN_BACKGROUND)
+    music.play(music.tone_playable(140, music.beat(BeatFraction.SIXTEENTH)),
+               music.PlaybackMode.IN_BACKGROUND)
 
-def sfx_death():
+def _melody_level_up():
+    music.play_melody("C5 E5 G5 C6", 180)
+
+def _melody_win():
+    music.play_melody("C E G C5 E5 G5 C6 E6 G6", 150)
+
+def _melody_death():
     music.play_melody("C5 B A G F E D C C3", 180)
 
+def sfx_level_up():
+    control.run_in_parallel(_melody_level_up)
+
 def sfx_win():
-    music.play_melody("C E G C5 E5 G5 C6", 160)
+    control.run_in_parallel(_melody_win)
 
-# Background loops -- each level gets its own vibe
-def theme_level1():
-    music.play_melody("C D E G - E D C - G E D C", 120)
-
-def theme_level2():
-    music.play_melody("E G B D5 - D5 B G E - G B D5", 150)
-
-def theme_level3():
-    music.play_melody("F A C5 F5 - F5 C5 A F - A C5 F5", 170)
-
-def theme_level4():
-    music.play_melody("G B D5 G5 - G5 D5 B G - B D5 G5", 140)
+def sfx_death():
+    control.run_in_parallel(_melody_death)
 
 
-# ---------- HUD / CELL HEALTH ----------
+# ==============================================================
+#  5. HUD & HEALTH HELPERS
+# ==============================================================
 def update_hud():
+    info.set_life(max(1, cell_health // 10))
     info.set_score(score)
-    info.set_life(cell_health // 10)
 
 def take_damage(amount):
     global cell_health
     cell_health = cell_health - amount
-    sfx_damage()
-    scene.camera_shake(6, 400)
-    if cell_health <= 0:
+    if cell_health < 0:
         cell_health = 0
-        update_hud()
-        game_over()
-    else:
-        update_hud()
+    update_hud()
+    scene.camera_shake(4, 300)
+    if cell_health <= 0:
+        lose_game("CELL FLATLINED")
 
 def heal(amount):
     global cell_health
@@ -237,521 +479,904 @@ def heal(amount):
         cell_health = 100
     update_hud()
 
+def add_score(amount):
+    global score
+    score = score + amount
+    update_hud()
 
-# ---------- GAME OVER ----------
-def game_over():
+def clear_gameplay_sprites():
+    global you_label
+    sprites.destroy_all_sprites_of_kind(SpriteKind.player)
+    sprites.destroy_all_sprites_of_kind(SpriteKind.food)
+    sprites.destroy_all_sprites_of_kind(SpriteKind.enemy)
+    sprites.destroy_all_sprites_of_kind(SpriteKind.projectile)
+    sprites.destroy_all_sprites_of_kind(WALL_KIND)
+    sprites.destroy_all_sprites_of_kind(HELD_KIND)
+    sprites.destroy_all_sprites_of_kind(SLOT_KIND)
+    sprites.destroy_all_sprites_of_kind(BOND_KIND)
+    sprites.destroy_all_sprites_of_kind(DROPLET_KIND)
+    sprites.destroy_all_sprites_of_kind(TATA_KIND)
+    sprites.destroy_all_sprites_of_kind(STRAND_KIND)
+    sprites.destroy_all_sprites_of_kind(SAFE_KIND)
+    sprites.destroy_all_sprites_of_kind(YOU_LABEL_KIND)
+    you_label = None
+
+# Create/position a yellow "YOU" label above the given player sprite.
+# Call once after the player sprite exists, then reposition it every
+# frame from the per-level on_update.
+def spawn_you_label():
+    global you_label
+    if you_label is not None:
+        you_label.destroy()
+    you_label = sprites.create(you_label_img(), YOU_LABEL_KIND)
+    you_label.set_flag(SpriteFlag.GHOST, True)
+    you_label.z = 100
+
+def position_you_label(target: Sprite):
+    if you_label is None or target is None:
+        return
+    you_label.set_position(target.x, target.y - 10)
+
+
+# ==============================================================
+#  6. SCREEN EFFECTS (glitch, damage flash, level splash)
+# ==============================================================
+def glitch_screen():
+    scene.camera_shake(6, 400)
+    effects.dissolve.start_screen_effect(180)
+    sfx_glitch()
+
+
+# ==============================================================
+#  7. LEVEL 1 — DNA BUILDING (drag & drop nucleotides)
+# ==============================================================
+# 10 template slots at top. Nucleotide palette (A T C G) at bottom.
+# Cursor moves freely with joystick. Press A near a palette tile to
+# pick up; press A near a slot to drop. Correct placement triggers
+# hydrogen-bond animation. Wrong = mutation. 3 mutations = collapse.
+# Timer: 60s before strand degrades.
+
+LEVEL1_SLOTS = 10
+LEVEL1_MUTATION_LIMIT = 3
+LEVEL1_TIME = 60
+
+level1_template   = ["T","A","C","G","A","T","G","C","T","A"]
+level1_targets    = ["A","T","G","C","T","A","C","G","A","T"]
+level1_filled     = [False, False, False, False, False, False, False, False, False, False]
+level1_mutations  = 0
+level1_correct    = 0
+level1_held       = ""
+level1_cursor: Sprite = None
+level1_held_sprite: Sprite = None
+level1_palette_sprites: List[Sprite] = []
+level1_slot_sprites: List[Sprite] = []
+level1_template_sprites: List[Sprite] = []
+level1_timer_sprite: Sprite = None
+
+# Slot geometry — 10 slots across top, 12px wide with 2px gaps
+LEVEL1_SLOT_Y = 22
+LEVEL1_SLOT_START_X = 14
+LEVEL1_SLOT_STRIDE = 14
+
+LEVEL1_TEMPLATE_Y = 8
+
+# Palette geometry — 4 nucleotides at bottom
+LEVEL1_PALETTE_Y = 104
+LEVEL1_PALETTE_XS = [30, 60, 90, 120]
+LEVEL1_PALETTE_LETTERS = ["A", "T", "C", "G"]
+
+def level1_slot_x(idx):
+    return LEVEL1_SLOT_START_X + idx * LEVEL1_SLOT_STRIDE
+
+def start_level1():
+    global current_level, game_running
+    global level1_mutations, level1_correct, level1_held
+    global level1_cursor, level1_held_sprite
+    global level1_palette_sprites, level1_slot_sprites, level1_template_sprites
+    global level1_filled
+    current_level = 1
+    game_running = True
+    clear_gameplay_sprites()
+    scene.set_background_color(15)
+
+    level1_mutations = 0
+    level1_correct = 0
+    level1_held = ""
+    level1_held_sprite = None
+    level1_filled = [False, False, False, False, False, False, False, False, False, False]
+
+    game.splash("LEVEL 1", "DNA BUILDING")
+    game.splash("Match bases:", "A-T  and  C-G")
+    game.splash("Pick with A", "Drop with A in slot")
+    game.splash("3 mutations =", "DNA COLLAPSE!")
+
+    # Template strand at top (shows what each slot needs to pair with)
+    level1_template_sprites = []
+    for i in range(LEVEL1_SLOTS):
+        s = sprites.create(nuc_img(level1_template[i]), SLOT_KIND)
+        s.set_position(level1_slot_x(i), LEVEL1_TEMPLATE_Y)
+        level1_template_sprites.append(s)
+
+    # Empty slots just below (where player places complements)
+    level1_slot_sprites = []
+    for i in range(LEVEL1_SLOTS):
+        s = sprites.create(slot_target_img(level1_targets[i]), SLOT_KIND)
+        s.set_position(level1_slot_x(i), LEVEL1_SLOT_Y)
+        level1_slot_sprites.append(s)
+
+    # Palette at bottom
+    level1_palette_sprites = []
+    for i in range(4):
+        s = sprites.create(nuc_img(LEVEL1_PALETTE_LETTERS[i]), SLOT_KIND)
+        s.set_position(LEVEL1_PALETTE_XS[i], LEVEL1_PALETTE_Y)
+        level1_palette_sprites.append(s)
+
+    # Cursor (player) — start near the palette so the user sees the
+    # affordance immediately. Faster move speed + STAY_IN_SCREEN.
+    level1_cursor = sprites.create(cursor_img(), SpriteKind.player)
+    level1_cursor.set_position(30, 90)
+    controller.move_sprite(level1_cursor, 140, 140)
+    level1_cursor.set_flag(SpriteFlag.STAY_IN_SCREEN, True)
+    spawn_you_label()
+
+    game.splash("Move with D-pad", "A = pick / place")
+    game.splash("Start at PALETTE", "Go UP to slot")
+
+    # Start countdown
+    info.start_countdown(LEVEL1_TIME)
+    info.on_countdown_end(on_level1_time_out)
+    update_hud()
+    sfx_level_up()
+
+def on_level1_time_out():
+    if current_level == 1 and game_running:
+        game.splash("DEGRADATION!", "Strand dissolved.")
+        lose_game("TIME RAN OUT")
+
+def level1_nearest_palette_index():
+    # Return palette idx if cursor is near a palette nucleotide, else -1.
+    # Generous thresholds so the user can easily grab a base.
+    if level1_cursor is None:
+        return -1
+    cy = level1_cursor.y
+    if abs(cy - LEVEL1_PALETTE_Y) > 20:
+        return -1
+    best = -1
+    best_d = 9999
+    for i in range(4):
+        d = abs(level1_cursor.x - LEVEL1_PALETTE_XS[i])
+        if d < 16 and d < best_d:
+            best = i
+            best_d = d
+    return best
+
+def level1_nearest_slot_index():
+    # Return slot idx if cursor is over a slot, else -1.
+    # Pick the slot closest to the cursor x, not just one within range.
+    if level1_cursor is None:
+        return -1
+    cy = level1_cursor.y
+    if abs(cy - LEVEL1_SLOT_Y) > 20:
+        return -1
+    best = -1
+    best_d = 9999
+    for i in range(LEVEL1_SLOTS):
+        d = abs(level1_cursor.x - level1_slot_x(i))
+        if d < 12 and d < best_d:
+            best = i
+            best_d = d
+    return best
+
+def level1_pick_up(letter):
+    global level1_held, level1_held_sprite
+    level1_held = letter
+    if level1_held_sprite is not None:
+        level1_held_sprite.destroy()
+    level1_held_sprite = sprites.create(nuc_img(letter), HELD_KIND)
+    sfx_pickup()
+
+def level1_drop_held():
+    global level1_held, level1_held_sprite
+    level1_held = ""
+    if level1_held_sprite is not None:
+        level1_held_sprite.destroy()
+    level1_held_sprite = None
+
+def level1_attempt_place(slot_idx):
+    global level1_correct, level1_mutations
+    if level1_filled[slot_idx]:
+        return
+    target = level1_targets[slot_idx]
+    if level1_held == target:
+        # correct placement!
+        placed = sprites.create(nuc_img(level1_held), SLOT_KIND)
+        placed.set_position(level1_slot_x(slot_idx), LEVEL1_SLOT_Y)
+        level1_filled[slot_idx] = True
+        level1_correct = level1_correct + 1
+        add_score(15)
+        sfx_correct()
+        # Hydrogen bonds: 2 for A-T, 3 for C-G
+        nbonds = 2
+        if target == "C" or target == "G":
+            nbonds = 3
+        for b in range(nbonds):
+            bd = sprites.create(bond_dot_img(), BOND_KIND)
+            bd.set_position(level1_slot_x(slot_idx) - 2 + b * 2,
+                            (LEVEL1_TEMPLATE_Y + LEVEL1_SLOT_Y) // 2)
+            bd.lifespan = 9999
+        sfx_bond()
+        level1_drop_held()
+        # win check
+        if level1_correct >= LEVEL1_SLOTS:
+            info.stop_countdown()
+            level1_win()
+    else:
+        # wrong placement!
+        level1_mutations = level1_mutations + 1
+        take_damage(10)
+        sfx_wrong()
+        glitch_screen()
+        # visual: shake the camera to emphasize the error
+        scene.camera_shake(4, 220)
+        game.splash("MUTATION!", "Wrong base.")
+        if level1_mutations >= LEVEL1_MUTATION_LIMIT:
+            info.stop_countdown()
+            game.splash("DNA DAMAGE", "DETECTED!")
+            game.splash("Strand collapsed!", "")
+            lose_game("TOO MANY MUTATIONS")
+        else:
+            level1_drop_held()
+
+def level1_on_a():
+    # Priority: if holding -> try drop in slot. If empty -> try pickup.
+    if level1_held == "":
+        pi = level1_nearest_palette_index()
+        if pi >= 0:
+            level1_pick_up(LEVEL1_PALETTE_LETTERS[pi])
+    else:
+        si = level1_nearest_slot_index()
+        if si >= 0:
+            level1_attempt_place(si)
+
+def level1_on_b():
+    # B: drop current held back
+    if level1_held != "":
+        level1_drop_held()
+        sfx_drop()
+
+def level1_on_update():
+    if current_level != 1 or not game_running:
+        return
+    if level1_held_sprite is not None and level1_cursor is not None:
+        level1_held_sprite.set_position(level1_cursor.x, level1_cursor.y - 10)
+    position_you_label(level1_cursor)
+
+def level1_win():
+    game.splash("LEVEL 1", "CLEAR!")
+    game.splash("All 10 bases", "paired.")
+    add_score(100)
+    heal(15)
+    effects.confetti.start_screen_effect(1200)
+    sfx_level_up()
+    control.wait_micros(100000)
+
+    # ---- Educational debrief: DNA base pairing ----
+    game.splash("WHAT JUST HAPPENED?", "DNA Base Pairing")
+    game.splash("DNA stores info in", "A-T and C-G pairs.")
+    game.splash("A bonds with T", "via 2 H-bonds.")
+    game.splash("C bonds with G", "via 3 H-bonds.")
+    game.splash("That is why C-G", "regions are stronger.")
+    game.splash("Each human cell has", "~3 billion base pairs.")
+    game.splash("Stretched out:", "2 meters of DNA!")
+
+    game.splash("REAL-WORLD USE #1:", "DNA Forensics")
+    game.splash("Crime labs match", "DNA at crime scenes")
+    game.splash("using the same", "pairing rules.")
+
+    game.splash("REAL-WORLD USE #2:", "Ancestry Testing")
+    game.splash("23andMe reads your", "base-pair sequence")
+    game.splash("to trace your", "genetic heritage.")
+
+    game.splash("REAL-WORLD USE #3:", "CRISPR gene editing")
+    game.splash("Scientists re-pair", "bases to cure")
+    game.splash("sickle cell, cancer,", "blindness, and more.")
+
+    game.splash("FUN FACT:", "DNA is so dense,")
+    game.splash("1 gram could store", "215 petabytes of data.")
+
+    game.splash("NEXT UP...", "TRANSCRIPTION!")
+    start_level2()
+
+
+# ==============================================================
+#  8. LEVEL 2 — TRANSCRIPTION (drop droplet on TATA)
+# ==============================================================
+# A fast-moving purple polymerase droplet bounces left-right above
+# the DNA strand. Press A to drop it. If it lands on the glowing
+# TATA zone, transcription initiates: strands separate visually
+# and mRNA auto-builds. Misses speed up the droplet and cost
+# attempts. 3 successful drops = level complete. 3 misses = fail.
+
+LEVEL2_SUCCESSES_NEEDED = 3
+LEVEL2_MAX_MISSES = 3
+LEVEL2_TIME = 45
+
+level2_droplet: Sprite = None
+level2_droplet_x      = 10
+level2_droplet_dir    = 1
+level2_droplet_speed  = 2.2  # pixels per frame
+level2_successes      = 0
+level2_misses         = 0
+level2_can_drop       = True
+level2_strand_top: Sprite = None
+level2_strand_bot: Sprite = None
+level2_tata: Sprite = None
+level2_tata_x         = 80
+level2_tata_width     = 22
+level2_mrna_sprites: List[Sprite] = []
+
+LEVEL2_DROPLET_Y = 28
+LEVEL2_STRAND_Y  = 64
+
+def start_level2():
+    global current_level, game_running
+    global level2_droplet, level2_droplet_x, level2_droplet_dir, level2_droplet_speed
+    global level2_successes, level2_misses, level2_can_drop
+    global level2_strand_top, level2_strand_bot, level2_tata, level2_tata_x
+    global level2_mrna_sprites
+    current_level = 2
+    game_running = True
+    clear_gameplay_sprites()
+    scene.set_background_color(11)  # deep purple
+
+    level2_droplet_x = 10.0
+    level2_droplet_dir = 1
+    level2_droplet_speed = 2.2
+    level2_successes = 0
+    level2_misses = 0
+    level2_can_drop = True
+    level2_mrna_sprites = []
+
+    game.splash("LEVEL 2", "TRANSCRIPTION")
+    game.splash("Drop polymerase", "onto TATA box!")
+    game.splash("A = DROP", "3 hits = WIN")
+    game.splash("3 misses = FAIL", "Speed rises!")
+
+    # DNA strand — top half (blue) and bottom half (red)
+    level2_strand_top = sprites.create(strand_piece_top(), STRAND_KIND)
+    level2_strand_top.set_position(80, LEVEL2_STRAND_Y - 3)
+
+    level2_strand_bot = sprites.create(strand_piece_bot(), STRAND_KIND)
+    level2_strand_bot.set_position(80, LEVEL2_STRAND_Y + 3)
+
+    # TATA promoter box — randomize location between attempts
+    level2_tata_x = randint(50, 110)
+    level2_tata = sprites.create(tata_img(), TATA_KIND)
+    level2_tata.set_position(level2_tata_x, LEVEL2_STRAND_Y - 16)
+
+    # Droplet
+    level2_droplet = sprites.create(droplet_img(), DROPLET_KIND)
+    level2_droplet.set_position(int(level2_droplet_x), LEVEL2_DROPLET_Y)
+    spawn_you_label()
+
+    info.start_countdown(LEVEL2_TIME)
+    info.on_countdown_end(on_level2_time_out)
+    update_hud()
+    sfx_level_up()
+
+def on_level2_time_out():
+    if current_level == 2 and game_running:
+        game.splash("TRANSCRIPTION", "TIMED OUT!")
+        lose_game("TRANSCRIPTION FAIL")
+
+def level2_on_update():
+    global level2_droplet_x, level2_droplet_dir
+    if current_level != 2 or not game_running:
+        return
+    if level2_droplet is None:
+        return
+    if not level2_can_drop:
+        return
+    # Oscillate droplet horizontally, bounce at walls
+    level2_droplet_x = level2_droplet_x + level2_droplet_dir * level2_droplet_speed
+    if level2_droplet_x > 150:
+        level2_droplet_x = 150
+        level2_droplet_dir = -1
+    if level2_droplet_x < 10:
+        level2_droplet_x = 10
+        level2_droplet_dir = 1
+    level2_droplet.set_position(int(level2_droplet_x), LEVEL2_DROPLET_Y)
+    position_you_label(level2_droplet)
+
+def level2_on_a():
+    global level2_can_drop, level2_successes, level2_misses, level2_droplet_speed
+    global level2_tata_x
+    if current_level != 2 or not game_running:
+        return
+    if not level2_can_drop or level2_droplet is None:
+        return
+    level2_can_drop = False
+    # Drop the droplet straight down and check
+    drop_x = int(level2_droplet_x)
+    # Animate falling
+    level2_droplet.set_velocity(0, 160)
+    # Wait for it to arrive at strand
+    _level2_resolve_drop(drop_x)
+
+def _level2_resolve_drop(drop_x):
+    global level2_successes, level2_misses, level2_droplet_speed, level2_tata_x
+    # Check if over TATA
+    hit = abs(drop_x - level2_tata_x) <= (level2_tata_width // 2)
+    if hit:
+        sfx_correct()
+        add_score(30)
+        level2_successes = level2_successes + 1
+        _level2_split_strands(drop_x)
+        _level2_build_mrna_animated(drop_x)
+        game.splash("PROMOTER HIT!", "Strands split.")
+        if level2_successes >= LEVEL2_SUCCESSES_NEEDED:
+            info.stop_countdown()
+            level2_win()
+            return
+    else:
+        sfx_wrong()
+        take_damage(12)
+        level2_misses = level2_misses + 1
+        game.splash("MISSED!", "Wrong zone.")
+        glitch_screen()
+        if level2_misses >= LEVEL2_MAX_MISSES:
+            info.stop_countdown()
+            game.splash("TRANSCRIPTION", "SHUTDOWN!")
+            lose_game("TOO MANY MISSES")
+            return
+    # Reset droplet for next attempt; speed ramps up
+    _level2_reset_droplet()
+
+def _level2_split_strands(drop_x):
+    # Quick animation: top strand jumps up, bot stays
+    if level2_strand_top is not None:
+        level2_strand_top.set_velocity(0, -20)
+        level2_strand_top.start_effect(effects.bubbles, 300)
+    if level2_strand_bot is not None:
+        level2_strand_bot.set_velocity(0, 10)
+    control.wait_micros(250000)
+    if level2_strand_top is not None:
+        level2_strand_top.set_velocity(0, 0)
+    if level2_strand_bot is not None:
+        level2_strand_bot.set_velocity(0, 0)
+
+def _level2_build_mrna_animated(start_x):
+    # Spawn a little row of U nucleotides building from start_x rightward
+    count = 5
+    for i in range(count):
+        u = sprites.create(nuc_img("U"), SLOT_KIND)
+        u.set_position(start_x + (i + 1) * 6, LEVEL2_STRAND_Y + 12)
+        u.start_effect(effects.cool_radial, 200)
+        level2_mrna_sprites.append(u)
+        sfx_bond()
+        control.wait_micros(60000)
+
+def _level2_reset_droplet():
+    global level2_can_drop, level2_droplet_x, level2_droplet_dir, level2_droplet_speed
+    global level2_tata_x
+    control.wait_micros(400000)
+    if level2_droplet is None:
+        return
+    level2_droplet.set_velocity(0, 0)
+    level2_droplet_x = 10.0
+    level2_droplet_dir = 1
+    level2_droplet_speed = level2_droplet_speed + 0.6   # SPEED RAMP!
+    level2_droplet.set_position(int(level2_droplet_x), LEVEL2_DROPLET_Y)
+    # Reposition TATA for next attempt
+    level2_tata_x = randint(40, 120)
+    if level2_tata is not None:
+        level2_tata.set_position(level2_tata_x, LEVEL2_STRAND_Y - 16)
+    # restore split strands
+    if level2_strand_top is not None:
+        level2_strand_top.set_position(80, LEVEL2_STRAND_Y - 3)
+    if level2_strand_bot is not None:
+        level2_strand_bot.set_position(80, LEVEL2_STRAND_Y + 3)
+    level2_can_drop = True
+
+def level2_win():
+    game.splash("LEVEL 2", "CLEAR!")
+    game.splash("mRNA ready", "for export.")
+    add_score(150)
+    heal(20)
+    effects.confetti.start_screen_effect(1200)
+    sfx_level_up()
+    control.wait_micros(100000)
+
+    # ---- Educational debrief: Transcription ----
+    game.splash("WHAT JUST HAPPENED?", "Transcription")
+    game.splash("RNA polymerase", "read your DNA")
+    game.splash("and copied it into", "messenger RNA.")
+    game.splash("TATA box = the", "promoter landing pad.")
+    game.splash("Without TATA,", "no transcription!")
+    game.splash("RNA uses URACIL (U)", "instead of T.")
+
+    game.splash("SPEED FACT:", "Polymerase reads")
+    game.splash("about 40 bases", "per SECOND.")
+
+    game.splash("REAL-WORLD USE #1:", "mRNA Vaccines")
+    game.splash("COVID vaccines from", "Pfizer and Moderna")
+    game.splash("are lab-made mRNA", "that trains your cells.")
+
+    game.splash("REAL-WORLD USE #2:", "Cancer Research")
+    game.splash("Tumors often hijack", "transcription.")
+    game.splash("Drugs that block RNA", "polymerase stop tumors.")
+
+    game.splash("REAL-WORLD USE #3:", "Antibiotics")
+    game.splash("Rifampin kills TB", "by jamming bacterial")
+    game.splash("RNA polymerase.", "Your human one is safe!")
+
+    game.splash("FUN FACT:", "Your body transcribes")
+    game.splash("about 75,000 mRNA", "molecules every second.")
+
+    game.splash("NEXT UP...", "mRNA DELIVERY!")
+    start_level3()
+
+
+# ==============================================================
+#  9. LEVEL 3 — mRNA MAZE
+# ==============================================================
+# Tile-based maze. Player = mRNA. Goal = ribosome. Collect >=5 ATP
+# orbs and avoid 4 patrolling RNase enzymes. Safe zones restore time
+# and briefly make the player invulnerable. Timer ticks down; hitting
+# 3 enzymes or the timer reaching 0 degrades the mRNA.
+
+LEVEL3_COLS = 10
+LEVEL3_ROWS = 7
+LEVEL3_TILE = 16
+LEVEL3_ORIGIN_X = 8     # first tile center x
+LEVEL3_ORIGIN_Y = 10    # first tile center y
+LEVEL3_TIME = 50
+LEVEL3_ENERGY_NEEDED = 3
+LEVEL3_HIT_LIMIT = 4
+
+# Legend: '.' path  '#' wall  'S' start  'R' ribosome  'E' energy  'V' safe zone
+level3_layout = [
+    "S.........",
+    ".##.###.#.",
+    ".E...#...V",
+    ".###.#.##.",
+    ".....V..E.",
+    "E##.###...",
+    "..E....#.R",
+]
+
+level3_walls: List[Sprite] = []
+level3_enemies: List[Sprite] = []
+level3_energies: List[Sprite] = []
+level3_safes: List[Sprite] = []
+level3_player: Sprite = None
+level3_ribosome: Sprite = None
+level3_hits      = 0
+level3_energy_collected = 0
+level3_invuln_until = 0
+
+def level3_tile_center(r, c):
+    x = LEVEL3_ORIGIN_X + c * LEVEL3_TILE
+    y = LEVEL3_ORIGIN_Y + r * LEVEL3_TILE
+    return x, y
+
+def start_level3():
+    global current_level, game_running
+    global level3_walls, level3_enemies, level3_energies, level3_safes
+    global level3_player, level3_ribosome
+    global level3_hits, level3_energy_collected
+    global level3_invuln_until
+    current_level = 3
+    game_running = True
+    clear_gameplay_sprites()
+    scene.set_background_color(12)  # deep wine
+
+    level3_walls = []
+    level3_enemies = []
+    level3_energies = []
+    level3_safes = []
+    level3_hits = 0
+    level3_energy_collected = 0
+    level3_invuln_until = 0
+
+    game.splash("LEVEL 3", "mRNA MAZE")
+    game.splash("Collect 3 ATP", "Reach ribosome!")
+    game.splash("Avoid RNase", "Safe zones heal")
+    game.splash("3 hits = FAIL", "Clock is ticking")
+
+    # Build the maze
+    for r in range(LEVEL3_ROWS):
+        for c in range(LEVEL3_COLS):
+            ch = level3_layout[r][c]
+            x, y = level3_tile_center(r, c)
+            if ch == "#":
+                w = sprites.create(wall_img(), WALL_KIND)
+                w.set_position(x, y)
+                w.set_flag(SpriteFlag.GHOST, False)
+                level3_walls.append(w)
+            elif ch == "S":
+                level3_player = sprites.create(mrna_player_img(), SpriteKind.player)
+                level3_player.set_position(x, y)
+                controller.move_sprite(level3_player, 70, 70)
+                level3_player.set_flag(SpriteFlag.STAY_IN_SCREEN, True)
+            elif ch == "R":
+                level3_ribosome = sprites.create(ribosome_img(), SpriteKind.food)
+                level3_ribosome.set_position(x, y)
+                level3_ribosome.data = "ribosome"
+            elif ch == "E":
+                e = sprites.create(atp_img(), SpriteKind.food)
+                e.set_position(x, y)
+                e.data = "energy"
+                level3_energies.append(e)
+            elif ch == "V":
+                v = sprites.create(safe_zone_img(), SAFE_KIND)
+                v.set_position(x, y)
+                v.set_flag(SpriteFlag.GHOST, True)
+                level3_safes.append(v)
+
+    # Spawn 4 patrolling enzymes in specific open tiles
+    enemy_spawn_rows = [0, 4, 6, 2]
+    enemy_spawn_cols = [9, 1, 5, 4]
+    for i in range(len(enemy_spawn_rows)):
+        r = enemy_spawn_rows[i]
+        c = enemy_spawn_cols[i]
+        x, y = level3_tile_center(r, c)
+        e = sprites.create(rnase_img(), SpriteKind.enemy)
+        e.set_position(x, y)
+        level3_enemies.append(e)
+
+    # Yellow YOU label follows the mRNA player
+    spawn_you_label()
+
+    info.start_countdown(LEVEL3_TIME)
+    info.on_countdown_end(on_level3_time_out)
+    update_hud()
+    sfx_level_up()
+
+def on_level3_time_out():
+    if current_level == 3 and game_running:
+        game.splash("mRNA DEGRADED!", "Time's up.")
+        lose_game("mRNA DEGRADATION")
+
+def _level3_is_wall_tile(r, c):
+    if r < 0 or c < 0 or r >= LEVEL3_ROWS or c >= LEVEL3_COLS:
+        return True
+    return level3_layout[r][c] == "#"
+
+def level3_on_enemy_tick():
+    # Each enzyme steps one tile toward the player along open paths
+    if current_level != 3 or not game_running:
+        return
+    if level3_player is None:
+        return
+    for e in sprites.all_of_kind(SpriteKind.enemy):
+        # Convert positions to tile indices
+        er = int((e.y - LEVEL3_ORIGIN_Y + LEVEL3_TILE // 2) / LEVEL3_TILE)
+        ec = int((e.x - LEVEL3_ORIGIN_X + LEVEL3_TILE // 2) / LEVEL3_TILE)
+        pr = int((level3_player.y - LEVEL3_ORIGIN_Y + LEVEL3_TILE // 2) / LEVEL3_TILE)
+        pc = int((level3_player.x - LEVEL3_ORIGIN_X + LEVEL3_TILE // 2) / LEVEL3_TILE)
+        # BFS (simple greedy — try horizontal then vertical)
+        dc = 0
+        dr = 0
+        if pc > ec and not _level3_is_wall_tile(er, ec + 1):
+            dc = 1
+        elif pc < ec and not _level3_is_wall_tile(er, ec - 1):
+            dc = -1
+        elif pr > er and not _level3_is_wall_tile(er + 1, ec):
+            dr = 1
+        elif pr < er and not _level3_is_wall_tile(er - 1, ec):
+            dr = -1
+        else:
+            # try alternate axis if primary blocked
+            if pr > er and not _level3_is_wall_tile(er + 1, ec):
+                dr = 1
+            elif pr < er and not _level3_is_wall_tile(er - 1, ec):
+                dr = -1
+        nx = e.x + dc * LEVEL3_TILE
+        ny = e.y + dr * LEVEL3_TILE
+        e.set_position(nx, ny)
+
+def _safe_zone_step():
+    # If player is standing on a safe zone, consume it: heal, +time, invuln.
+    # Used safes are destroyed, so iterating sprites.all_of_kind(SAFE_KIND)
+    # naturally skips them the next tick.
+    global level3_invuln_until
+    if level3_player is None:
+        return
+    for s in sprites.all_of_kind(SAFE_KIND):
+        if abs(level3_player.x - s.x) < 8 and abs(level3_player.y - s.y) < 8:
+            info.change_countdown_by(5)
+            level3_invuln_until = game.runtime() + 1500
+            heal(10)
+            sfx_level_up()
+            game.splash("SAFE ZONE", "+5s +10 HP")
+            s.destroy(effects.cool_radial, 400)
+            return
+
+def level3_on_update():
+    if current_level != 3 or not game_running:
+        return
+    _safe_zone_step()
+    position_you_label(level3_player)
+
+def on_mrna_hits_enzyme(sprite, other):
+    global level3_hits, level3_invuln_until
+    if current_level != 3:
+        return
+    # invulnerable window from safe zone?
+    if game.runtime() < level3_invuln_until:
+        return
+    level3_hits = level3_hits + 1
+    other.destroy(effects.fire, 400)
+    take_damage(18)
+    sfx_damage()
+    game.splash("RNase HIT!", str(LEVEL3_HIT_LIMIT - level3_hits) + " hits left")
+    if level3_hits >= LEVEL3_HIT_LIMIT:
+        info.stop_countdown()
+        game.splash("mRNA DEGRADED!", "Too many hits.")
+        lose_game("mRNA DESTROYED")
+
+def on_mrna_grabs_food(sprite, other):
+    global level3_energy_collected
+    if current_level != 3:
+        return
+    if other.data == "ribosome":
+        if level3_energy_collected >= LEVEL3_ENERGY_NEEDED:
+            info.stop_countdown()
+            level3_win()
+        else:
+            needed = LEVEL3_ENERGY_NEEDED - level3_energy_collected
+            sprite.say("need " + str(needed) + "!", 900)
+        return
+    if other.data == "energy":
+        level3_energy_collected = level3_energy_collected + 1
+        add_score(10)
+        sfx_energy()
+        other.destroy(effects.cool_radial, 250)
+
+def level3_win():
+    win_game()
+
+
+# ==============================================================
+#  10. WIN / LOSE SCREENS
+# ==============================================================
+def win_game():
     global game_running
     game_running = False
-    sfx_death()
+    sprites.destroy_all_sprites_of_kind(SpriteKind.enemy)
+    sprites.destroy_all_sprites_of_kind(SpriteKind.food)
+    sprites.destroy_all_sprites_of_kind(SpriteKind.projectile)
+    scene.set_background_color(9)
+    effects.confetti.start_screen_effect(3000)
+    sfx_win()
+    game.splash("* * * * * * *", "* YOU WIN! *")
+    game.splash("CELL ALIVE!", "mRNA delivered.")
+
+    # ---- Educational debrief: mRNA delivery & translation ----
+    game.splash("WHAT JUST HAPPENED?", "mRNA Delivery")
+    game.splash("mRNA travels from", "nucleus to ribosome")
+    game.splash("dodging RNase enzymes", "that would chew it up.")
+    game.splash("ATP orbs = energy", "your cell burns.")
+    game.splash("Ribosome reads mRNA", "and builds PROTEINS.")
+    game.splash("Proteins do", "EVERYTHING in you:")
+    game.splash("hemoglobin, insulin,", "antibodies, muscle!")
+
+    game.splash("REAL-WORLD USE #1:", "mRNA Therapeutics")
+    game.splash("Scientists deliver", "custom mRNA to cells")
+    game.splash("to make missing", "proteins on demand.")
+    game.splash("Already used for:", "COVID, cancer, flu.")
+
+    game.splash("REAL-WORLD USE #2:", "Gene Therapy")
+    game.splash("For kids with SMA,", "a single dose delivers")
+    game.splash("working mRNA and", "saves their lives.")
+
+    game.splash("REAL-WORLD USE #3:", "Sickle Cell Cure")
+    game.splash("FDA-approved 2023:", "Casgevy edits mRNA")
+    game.splash("production to end", "sickle cell disease.")
+
+    game.splash("THE CENTRAL DOGMA:", "DNA -> RNA -> Protein")
+    game.splash("Every cell you have", "runs on this loop")
+    game.splash("trillions of times", "every single day.")
+
+    game.splash("FUN FACT:", "Your body makes")
+    game.splash("about 2 million", "new proteins PER SECOND.")
+
+    game.splash("FINAL SCORE", str(score))
+    game.splash("Cell health", str(cell_health) + " / 100")
+    game.splash("You are a cell!", "Keep it alive.")
+    game.splash("Thanks for playing!", "- Cell Studio -")
+    game.set_game_over_effect(True, effects.confetti)
+    game.game_over(True)
+
+def lose_game(reason):
+    global game_running
+    game_running = False
+    sprites.destroy_all_sprites_of_kind(SpriteKind.enemy)
+    sprites.destroy_all_sprites_of_kind(SpriteKind.food)
+    sprites.destroy_all_sprites_of_kind(SpriteKind.projectile)
     scene.set_background_color(2)
+    effects.dissolve.start_screen_effect(1200)
+    sfx_death()
+    game.splash("GAME OVER", reason)
+    game.splash("FINAL SCORE", str(score))
+    game.splash("Cell health", str(cell_health) + " / 100")
     game.set_game_over_effect(False, effects.dissolve)
     game.game_over(False)
 
 
-# ---------- LEVEL 1: DNA BUILDING ----------
-# Player sees a left strand (template) and must pick the
-# complementary base for each slot on the right strand.
-
-template_sequence = ["A", "T", "C", "G", "A", "T"]
-expected_pairs = {"A": "T", "T": "A", "C": "G", "G": "C"}
-selected_index = 0
-cursor_sprite = None
-level1_slots = []
-level1_placed = []
-available_bases = ["A", "T", "C", "G"]
-current_pick = 0
-pick_sprite = None
-bond_sprites = []
-
-def start_level1():
-    global current_level, selected_index, current_pick
-    current_level = 1
-    selected_index = 0
-    current_pick = 0
-    scene.set_background_color(15)
-    game.splash("LEVEL 1", "Build the DNA strand")
-    game.splash("A pairs with T", "C pairs with G")
-    theme_level1()
-    build_level1_board()
-
-def build_level1_board():
-    global cursor_sprite, pick_sprite, level1_slots, level1_placed, bond_sprites
-    scene.set_background_color(15)
-    # Clear any old sprites
-    sprites.destroy_all_sprites_of_kind(SpriteKind.player)
-    level1_slots = []
-    level1_placed = []
-    bond_sprites = []
-
-    # Draw the template strand on the left
-    y = 20
-    for i in range(len(template_sequence)):
-        base = template_sequence[i]
-        s = sprites.create(nucleotide_img(base), SpriteKind.food)
-        s.x = 40
-        s.y = y + i * 15
-        level1_slots.append(s)
-
-        # Empty placeholder on the right
-        slot = sprites.create(img("""
-            1 1 1 1 1 1 1 1
-            1 . . . . . . 1
-            1 . . . . . . 1
-            1 . . . . . . 1
-            1 . . . . . . 1
-            1 . . . . . . 1
-            1 . . . . . . 1
-            1 1 1 1 1 1 1 1
-        """), SpriteKind.enemy)
-        slot.x = 120
-        slot.y = y + i * 15
-        level1_placed.append(None)
-
-    # Cursor marker
-    cursor_sprite = sprites.create(img("""
-        . . 5 5 . .
-        . 5 5 5 5 .
-        5 5 5 5 5 5
-        5 5 5 5 5 5
-        . 5 5 5 5 .
-        . . 5 5 . .
-    """), SpriteKind.projectile)
-    cursor_sprite.x = 120
-    cursor_sprite.y = 20
-
-    # Pick menu (cycles through A/T/C/G)
-    pick_sprite = sprites.create(nucleotide_img(available_bases[current_pick]), SpriteKind.player)
-    pick_sprite.x = 80
-    pick_sprite.y = 110
-
-    game.show_long_text("Left + Right to change base.  A to cycle.  B to place.", DialogLayout.BOTTOM)
-
-
-def level1_change_slot(direction):
-    global selected_index
-    selected_index = selected_index + direction
-    if selected_index < 0:
-        selected_index = 0
-    if selected_index >= len(template_sequence):
-        selected_index = len(template_sequence) - 1
-    cursor_sprite.y = 20 + selected_index * 15
-
-def level1_cycle_pick():
-    global current_pick
-    current_pick = (current_pick + 1) % len(available_bases)
-    pick_sprite.set_image(nucleotide_img(available_bases[current_pick]))
-    music.play(music.tone_playable(440, music.beat(BeatFraction.SIXTEENTH)), music.PlaybackMode.IN_BACKGROUND)
-
-def level1_place():
-    global score, mutations
-    if level1_placed[selected_index] is not None:
-        return
-    chosen = available_bases[current_pick]
-    template = template_sequence[selected_index]
-    correct = expected_pairs[template]
-    if chosen == correct:
-        # Place the correct sprite
-        placed = sprites.create(nucleotide_img(chosen), SpriteKind.food)
-        placed.x = 120
-        placed.y = 20 + selected_index * 15
-        level1_placed[selected_index] = placed
-        score = score + 10
-        sfx_correct()
-        # Animate hydrogen bond
-        bond = sprites.create(img("""
-            1 1 1 1 1 1 1 1
-        """), SpriteKind.projectile)
-        bond.x = 80
-        bond.y = 20 + selected_index * 15
-        bond_sprites.append(bond)
-        sfx_bond()
-        update_hud()
-        if all_slots_filled():
-            sfx_level_up()
-            heal(10)
-            pause(800)
-            start_level2()
-    else:
-        mutations = mutations + 1
-        take_damage(15)
-        game.show_long_text("MUTATION! " + template + " does not pair with " + chosen, DialogLayout.BOTTOM)
-        if mutations >= 3:
-            game.show_long_text("DNA DAMAGE DETECTED", DialogLayout.CENTER)
-            take_damage(30)
-
-def all_slots_filled():
-    for p in level1_placed:
-        if p is None:
-            return False
-    return True
-
-
-# ---------- LEVEL 2: TRANSCRIPTION ----------
-# A moving RNA-polymerase droplet bounces across the screen.
-# Player must press A when it overlaps the glowing promoter zone.
-
-polymerase_sprite = None
-promoter_zone = None
-polymerase_speed = 60
-level2_attempts = 0
-level2_hits = 0
-
-def start_level2():
-    global current_level, polymerase_sprite, promoter_zone, polymerase_speed
-    global level2_attempts, level2_hits
-    current_level = 2
-    level2_attempts = 0
-    level2_hits = 0
-    polymerase_speed = 60
-    sprites.destroy_all_sprites_of_kind(SpriteKind.player)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.food)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.enemy)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.projectile)
-    scene.set_background_color(9)
-    game.splash("LEVEL 2", "Transcription")
-    game.splash("Press A when the droplet", "crosses the promoter zone!")
-    theme_level2()
-
-    # Promoter zone
-    promoter_zone = sprites.create(img("""
-        5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5
-        5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5
-        5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5
-    """), SpriteKind.food)
-    promoter_zone.x = 80
-    promoter_zone.y = 60
-
-    # DNA background strand
-    y = 55
-    for i in range(10):
-        s = sprites.create(nucleotide_img(template_sequence[i % len(template_sequence)]), SpriteKind.enemy)
-        s.x = 10 + i * 15
-        s.y = y
-
-    # Polymerase droplet
-    polymerase_sprite = sprites.create(polymerase_img(), SpriteKind.projectile)
-    polymerase_sprite.y = 30
-    polymerase_sprite.x = 10
-    polymerase_sprite.vx = polymerase_speed
-    polymerase_sprite.set_bounce_on_wall(True)
-
-def level2_check_drop():
-    global level2_attempts, level2_hits, polymerase_speed
-    level2_attempts = level2_attempts + 1
-    if polymerase_sprite is None:
-        return
-    diff = polymerase_sprite.x - promoter_zone.x
-    if diff < 0:
-        diff = -diff
-    if diff < 20:
-        level2_hits = level2_hits + 1
-        sfx_correct()
-        # Visual: strands separate
-        effects.star_field.start_screen_effect(1000)
-        polymerase_speed = polymerase_speed + 20
-        polymerase_sprite.vx = polymerase_speed
-        if level2_hits >= 3:
-            sfx_level_up()
-            heal(15)
-            pause(800)
-            start_level3()
-    else:
-        take_damage(15)
-        game.show_long_text("Missed the promoter!", DialogLayout.BOTTOM)
-        if level2_attempts - level2_hits >= 3:
-            game.show_long_text("Transcription failed — cell is shutting down", DialogLayout.CENTER)
-            take_damage(25)
-
-
-# ---------- LEVEL 3: mRNA MAZE ----------
-# The mRNA sprite travels from the nucleus (top) down to the ribosome (bottom)
-# while the player dodges enzyme hazards and collects energy points.
-
-mrna_sprite = None
-ribosome_sprite = None
-enzyme_spawner = None
-energy_spawner = None
-level3_timer = 30
-level3_energy_required = 5
-level3_energy_collected = 0
-
-def start_level3():
-    global current_level, mrna_sprite, ribosome_sprite
-    global level3_timer, level3_energy_required, level3_energy_collected
-    current_level = 3
-    level3_timer = 30
-    level3_energy_required = 5
-    level3_energy_collected = 0
-    sprites.destroy_all_sprites_of_kind(SpriteKind.player)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.food)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.enemy)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.projectile)
-    scene.set_background_color(11)
-    game.splash("LEVEL 3", "mRNA Maze")
-    game.splash("Reach the ribosome!", "Dodge enzymes, grab energy.")
-    theme_level3()
-
-    mrna_sprite = sprites.create(mrna_img(), SpriteKind.player)
-    mrna_sprite.x = 80
-    mrna_sprite.y = 20
-    controller.move_sprite(mrna_sprite, 100, 100)
-
-    ribosome_sprite = sprites.create(ribosome_img(), SpriteKind.food)
-    ribosome_sprite.x = 80
-    ribosome_sprite.y = 110
-
-    info.start_countdown(level3_timer)
-
-def spawn_enzyme():
-    e = sprites.create(enzyme_img(), SpriteKind.enemy)
-    e.x = randint(10, 150)
-    e.y = 0
-    e.vy = randint(30, 70)
-    e.set_flag(SpriteFlag.AUTO_DESTROY, True)
-
-def spawn_energy():
-    e = sprites.create(energy_img(), SpriteKind.food)
-    e.x = randint(10, 150)
-    e.y = randint(20, 100)
-    e.set_flag(SpriteFlag.GHOST, False)
-
-
-# ---------- LEVEL 4: TRANSLATION ----------
-# Show a codon (3 nucleotides), present 3 amino-acid options.
-# Player picks the correct one. Three correct picks = protein formed.
-
-codon_table = [
-    ["AUG", "Met"],
-    ["UUU", "Phe"],
-    ["CAU", "His"],
-    ["GCA", "Ala"],
-    ["UAC", "Tyr"],
-]
-level4_round = 0
-level4_correct = 0
-level4_options = []
-level4_codon_sprites = []
-level4_option_sprites = []
-level4_selected_option = 0
-level4_highlight_sprite = None
-
-fake_amino_pool = ["Met", "Phe", "His", "Ala", "Tyr", "Leu", "Ser", "Val", "Gly", "Lys"]
-
-def start_level4():
-    global current_level, level4_round, level4_correct
-    current_level = 4
-    level4_round = 0
-    level4_correct = 0
-    sprites.destroy_all_sprites_of_kind(SpriteKind.player)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.food)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.enemy)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.projectile)
-    scene.set_background_color(4)
-    game.splash("LEVEL 4", "Translation")
-    game.splash("Match codons to amino acids", "Left/Right to choose, A to pick")
-    theme_level4()
-    next_translation_round()
-
-def next_translation_round():
-    global level4_options, level4_selected_option, level4_codon_sprites, level4_option_sprites, level4_round, level4_highlight_sprite
-    sprites.destroy_all_sprites_of_kind(SpriteKind.food)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.enemy)
-    sprites.destroy_all_sprites_of_kind(SpriteKind.projectile)
-    if level4_round >= len(codon_table):
-        win_game()
-        return
-
-    codon_str = codon_table[level4_round][0]
-    correct_amino = codon_table[level4_round][1]
-
-    # Draw the 3 codon nucleotides
-    level4_codon_sprites = []
-    for i in range(3):
-        letter = codon_str[i]
-        s = sprites.create(nucleotide_img(letter), SpriteKind.enemy)
-        s.x = 50 + i * 20
-        s.y = 40
-        level4_codon_sprites.append(s)
-
-    # Build options (1 correct + 2 fake)
-    options = [correct_amino]
-    tries = 0
-    while len(options) < 3 and tries < 20:
-        tries = tries + 1
-        pick = fake_amino_pool[randint(0, len(fake_amino_pool) - 1)]
-        if pick not in options:
-            options.append(pick)
-    # Shuffle
-    for i in range(len(options)):
-        j = randint(0, len(options) - 1)
-        tmp = options[i]
-        options[i] = options[j]
-        options[j] = tmp
-    level4_options = options
-    level4_selected_option = 0
-    level4_option_sprites = []
-
-    # Render option text boxes as colored tiles; text via console-overlay
-    for i in range(3):
-        tile = sprites.create(img("""
-            1 1 1 1 1 1 1 1 1 1 1 1 1 1
-            1 6 6 6 6 6 6 6 6 6 6 6 6 1
-            1 6 6 6 6 6 6 6 6 6 6 6 6 1
-            1 6 6 6 6 6 6 6 6 6 6 6 6 1
-            1 6 6 6 6 6 6 6 6 6 6 6 6 1
-            1 6 6 6 6 6 6 6 6 6 6 6 6 1
-            1 1 1 1 1 1 1 1 1 1 1 1 1 1
-        """), SpriteKind.food)
-        tile.x = 30 + i * 50
-        tile.y = 90
-        tile.say(options[i], 0)
-        level4_option_sprites.append(tile)
-
-    # Create a bright highlight arrow that sits above the selected option
-    level4_highlight_sprite = sprites.create(img("""
-        . . 5 5 5 5 . .
-        . 5 5 5 5 5 5 .
-        5 5 5 5 5 5 5 5
-        . 5 5 5 5 5 5 .
-        . . 5 5 5 5 . .
-        . . . 5 5 . . .
-    """), SpriteKind.projectile)
-    level4_highlight_sprite.y = 75
-    level4_highlight_option()
-
-def level4_highlight_option():
-    # Move the highlight arrow over the currently selected option.
-    # Avoids set_scale, which is unreliable in some MakeCode Arcade builds.
-    if level4_highlight_sprite is None:
-        return
-    if level4_selected_option < 0 or level4_selected_option >= len(level4_option_sprites):
-        return
-    target = level4_option_sprites[level4_selected_option]
-    level4_highlight_sprite.x = target.x
-    level4_highlight_sprite.y = target.y - 16
-
-def level4_move_option(direction):
-    global level4_selected_option
-    level4_selected_option = level4_selected_option + direction
-    if level4_selected_option < 0:
-        level4_selected_option = 0
-    if level4_selected_option >= 3:
-        level4_selected_option = 2
-    level4_highlight_option()
-    music.play(music.tone_playable(440, music.beat(BeatFraction.SIXTEENTH)), music.PlaybackMode.IN_BACKGROUND)
-
-def level4_confirm():
-    global level4_round, level4_correct, score
-    correct_amino = codon_table[level4_round][1]
-    chosen = level4_options[level4_selected_option]
-    if chosen == correct_amino:
-        sfx_correct()
-        level4_correct = level4_correct + 1
-        score = score + 20
-        update_hud()
-        level4_round = level4_round + 1
-        pause(500)
-        next_translation_round()
-    else:
-        sfx_wrong()
-        take_damage(20)
-        game.show_long_text(chosen + " does not code for " + correct_amino, DialogLayout.BOTTOM)
-
-
-# ---------- WIN ----------
-def win_game():
-    global game_running
-    game_running = False
-    sfx_win()
-    scene.set_background_color(5)
-    game.show_long_text("Protein synthesized!", DialogLayout.CENTER)
-    game.show_long_text("You have traveled the Central Dogma:", DialogLayout.CENTER)
-    game.show_long_text("DNA -> RNA -> Protein.  Final score: " + str(score), DialogLayout.CENTER)
-    game.set_game_over_effect(True, effects.confetti)
-    game.game_over(True)
-
-
-# ---------- CONTROLLER HANDLERS ----------
-def on_left():
-    if current_level == 1:
-        level1_change_slot(-1)
-    if current_level == 4:
-        level4_move_option(-1)
-
-def on_right():
-    if current_level == 1:
-        level1_change_slot(1)
-    if current_level == 4:
-        level4_move_option(1)
-
+# ==============================================================
+#  11. CONTROLLER HANDLERS
+# ==============================================================
 def on_a():
     if current_level == 1:
-        level1_cycle_pick()
-    if current_level == 2:
-        level2_check_drop()
-    if current_level == 4:
-        level4_confirm()
+        level1_on_a()
+    elif current_level == 2:
+        level2_on_a()
 
 def on_b():
     if current_level == 1:
-        level1_place()
+        level1_on_b()
 
-controller.left.on_event(ControllerButtonEvent.PRESSED, on_left)
-controller.right.on_event(ControllerButtonEvent.PRESSED, on_right)
 controller.A.on_event(ControllerButtonEvent.PRESSED, on_a)
 controller.B.on_event(ControllerButtonEvent.PRESSED, on_b)
 
 
-# ---------- COLLISION HANDLERS (Level 3) ----------
-def on_mrna_hits_enzyme(sprite, other):
-    other.destroy(effects.fire, 300)
-    take_damage(20)
-    sfx_damage()
-
-def on_mrna_grabs_energy(sprite, other):
-    global level3_energy_collected, score
-    if current_level != 3:
-        return
-    if other == ribosome_sprite:
-        if level3_energy_collected >= level3_energy_required:
-            sfx_level_up()
-            heal(20)
-            start_level4()
-        else:
-            game.show_long_text("Collect more energy first!", DialogLayout.BOTTOM)
-        return
-    level3_energy_collected = level3_energy_collected + 1
-    score = score + 5
-    update_hud()
-    sfx_energy()
-    other.destroy(effects.cool_radial, 200)
-
+# ==============================================================
+#  12. COLLISION HOOKS
+# ==============================================================
 sprites.on_overlap(SpriteKind.player, SpriteKind.enemy, on_mrna_hits_enzyme)
-sprites.on_overlap(SpriteKind.player, SpriteKind.food, on_mrna_grabs_energy)
+sprites.on_overlap(SpriteKind.player, SpriteKind.food, on_mrna_grabs_food)
+
+# Player vs walls in Level 3 — block movement
+def on_player_wall(sprite, wall):
+    # Push player back to previous tile center
+    dx = sprite.x - wall.x
+    dy = sprite.y - wall.y
+    if abs(dx) > abs(dy):
+        if dx > 0:
+            sprite.x = wall.x + wall.width / 2 + sprite.width / 2 + 1
+        else:
+            sprite.x = wall.x - wall.width / 2 - sprite.width / 2 - 1
+    else:
+        if dy > 0:
+            sprite.y = wall.y + wall.height / 2 + sprite.height / 2 + 1
+        else:
+            sprite.y = wall.y - wall.height / 2 - sprite.height / 2 - 1
+
+sprites.on_overlap(SpriteKind.player, WALL_KIND, on_player_wall)
 
 
-# ---------- TIMERS ----------
-def on_tick_spawn_enzyme():
-    if current_level == 3:
-        spawn_enzyme()
+# ==============================================================
+#  13. TIMERS / UPDATES
+# ==============================================================
+def on_update_tick():
+    if current_level == 1:
+        level1_on_update()
+    elif current_level == 2:
+        level2_on_on_update()
+    elif current_level == 3:
+        level3_on_update()
 
-def on_tick_spawn_energy():
-    if current_level == 3:
-        spawn_energy()
+def level2_on_on_update():
+    # alias — just calls level2_on_update
+    level2_on_update()
 
-game.on_update_interval(900, on_tick_spawn_enzyme)
-game.on_update_interval(1500, on_tick_spawn_energy)
+game.on_update(on_update_tick)
+game.on_update_interval(600, level3_on_enemy_tick)
 
 
-# ---------- MAIN INTRO ----------
+# ==============================================================
+#  14. INTRO + MAIN ENTRY
+# ==============================================================
 def intro():
     scene.set_background_color(1)
-    game.splash("DNA: CODE OF LIFE", "An educational biology game")
-    game.splash("Cell health = lives.", "Mistakes damage the cell.")
-    game.splash("Press any button to begin", "")
+    game.splash("CELL STUDIO", "'A' to START")
+    game.splash("You ARE a cell.", "Keep it alive.")
+    game.splash("Three levels:", "Build - Transcribe - Deliver")
+    game.splash("Controls:", "D-pad + A/B")
     sfx_level_up()
 
 update_hud()
 intro()
 start_level1()
-game_running = True
