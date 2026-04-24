@@ -1,922 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Cell Studio — DNA: Code of Life</title>
-<meta name="description" content="Cell Studio presents DNA: Code of Life — an educational biology game about the central dogma." />
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<style>
-/* ============================================================
-   CELL STUDIO — DNA: CODE OF LIFE
-   ============================================================ */
-:root {
-  --c-a: #ff3b4c;   --c-t: #3277ff;   --c-c: #30d68a;
-  --c-g: #ffd23b;   --c-u: #b44dff;
-  --bg-0: #05060d;  --bg-1: #0b0d1c;  --bg-2: #141836;
-  --ink: #ecefff;   --ink-dim: #9aa3c7;   --accent: #7cf9ff;
-  --f-display: 'Press Start 2P', monospace;
-  --f-body: 'Space Grotesk', system-ui, sans-serif;
-  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  background: var(--bg-0); color: var(--ink);
-  font-family: var(--f-body); line-height: 1.6;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-a { color: inherit; text-decoration: none; }
-img { max-width: 100%; display: block; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Under Construction</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-/* ============================================================
-   CRT / OLD-TV SHADER — subtle, non-obstructive
-   ============================================================ */
-.crt-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9998;
-  mix-blend-mode: normal;
-}
-/* scanlines — wider spacing, toned down */
-.crt-overlay::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.26) 0px,
-    rgba(0, 0, 0, 0.26) 2px,
-    transparent 2px,
-    transparent 8px
-  );
-  opacity: 1;
-}
-/* vignette + curvature tint — moderate */
-.crt-overlay::after {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse at center, transparent 48%, rgba(0, 0, 0, 0.65) 100%),
-    radial-gradient(ellipse at center, rgba(124, 249, 255, 0.04) 0%, transparent 50%);
-  opacity: 1;
-}
-/* flicker only — no rolling sweep */
-.crt-flicker {
-  position: absolute; inset: 0;
-  background: rgba(255, 255, 255, 0.04);
-  animation: crt-flick 0.16s steps(2) infinite;
-  mix-blend-mode: overlay;
-}
-@keyframes crt-flick {
-  0%   { opacity: 0.1; }
-  50%  { opacity: 0.55; }
-  100% { opacity: 0.2; }
-}
-/* chromatic aberration — moderate color fringing on edges */
-body::before {
-  content: ''; position: fixed; inset: 0;
-  pointer-events: none; z-index: 9997;
-  background:
-    linear-gradient(90deg, rgba(255, 59, 76, 0.05), transparent 12%),
-    linear-gradient(-90deg, rgba(50, 119, 255, 0.05), transparent 12%);
-  mix-blend-mode: screen;
-}
-@media (prefers-reduced-motion: reduce) {
-  .crt-roll, .crt-flicker { animation: none; display: none; }
-}
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1540 50%, #0f0d2b 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
 
-/* LOADER */
-.loader {
-  position: fixed; inset: 0; background: var(--bg-0);
-  z-index: 10000; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  transition: opacity 0.8s ease, visibility 0.8s;
-}
-.loader.done { opacity: 0; visibility: hidden; }
-.loader-helix { position: relative; width: 80px; height: 160px; animation: loader-spin 2s linear infinite; margin-bottom: 2rem; }
-.loader-strand {
-  position: absolute; top: 0; left: 50%; width: 4px; height: 100%;
-  background: linear-gradient(var(--c-a), var(--c-t), var(--c-c), var(--c-g));
-  transform-origin: top center;
-}
-.loader-strand:nth-child(1) { transform: translateX(-50%) rotateY(0deg); }
-.loader-strand:nth-child(2) { transform: translateX(-50%) rotateY(90deg); }
-.loader-brand { font-family: var(--f-display); font-size: 1rem; letter-spacing: 6px; color: var(--accent); margin-bottom: 0.6rem; }
-.loader-sub { font-family: var(--f-display); font-size: 0.55rem; letter-spacing: 3px; color: var(--ink-dim); animation: pulse-text 1.4s ease-in-out infinite; }
-@keyframes loader-spin { 0% { transform: rotateX(60deg) rotateY(0deg); } 100% { transform: rotateX(60deg) rotateY(360deg); } }
-@keyframes pulse-text { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    /* Animated background */
+    .bg-animated {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+    }
 
-/* SCROLL PROGRESS */
-.scroll-progress {
-  position: fixed; top: 0; left: 0; height: 3px; width: 0%;
-  background: linear-gradient(90deg, var(--c-a), var(--c-g), var(--c-c), var(--c-t), var(--c-u));
-  z-index: 999; box-shadow: 0 0 10px var(--accent);
-  transition: width 0.1s linear;
-}
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.3;
+      filter: blur(80px);
+      animation: float 20s infinite ease-in-out;
+    }
 
-/* CURSOR SPOT */
-.cursor-spot {
-  position: fixed; top: 0; left: 0; width: 8px; height: 8px;
-  border-radius: 50%; background: var(--accent);
-  box-shadow: 0 0 10px var(--accent);
-  pointer-events: none; z-index: 9999;
-  mix-blend-mode: screen;
-  transform: translate(-50%, -50%);
-  transition: width 0.25s var(--ease-smooth), height 0.25s var(--ease-smooth), opacity 0.3s ease;
-  opacity: 0.7;
-  will-change: transform, left, top;
-}
-.cursor-spot.active { width: 28px; height: 28px; opacity: 0.35; }
-@media (max-width: 720px) { .cursor-spot { display: none; } }
+    .orb1 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, #7cf9ff, transparent);
+      top: -100px;
+      right: -100px;
+      animation-delay: 0s;
+    }
 
-/* PARTICLES */
-.particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
-.particle { position: absolute; font-family: var(--f-display); font-weight: bold; opacity: 0.18; animation: float-up linear infinite; will-change: transform, opacity; }
-@keyframes float-up {
-  0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-  10%  { opacity: 0.32; } 90% { opacity: 0.32; }
-  100% { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
-}
+    .orb2 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, #b44dff, transparent);
+      bottom: -150px;
+      left: -150px;
+      animation-delay: 5s;
+    }
 
-/* NAVBAR */
-.navbar {
-  position: fixed; top: 0; left: 0; width: 100%;
-  padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center;
-  z-index: 50; background: rgba(5, 6, 13, 0.6); backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255,255,255,0.05); transition: all 0.35s var(--ease-smooth);
-}
-.navbar.scrolled { padding: 0.6rem 2rem; background: rgba(5, 6, 13, 0.92); }
-.brand { display: flex; align-items: center; gap: 0.8rem; }
-.brand-mark { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; width: 28px; height: 28px; transform: rotate(45deg); }
-.brand-dot { border-radius: 2px; animation: brand-pulse 2s ease-in-out infinite; }
-.brand-mark .brand-dot:nth-child(1) { background: var(--c-a); animation-delay: 0s; }
-.brand-mark .brand-dot:nth-child(2) { background: var(--c-t); animation-delay: 0.15s; }
-.brand-mark .brand-dot:nth-child(3) { background: var(--c-c); animation-delay: 0.3s; }
-.brand-mark .brand-dot:nth-child(4) { background: var(--c-g); animation-delay: 0.45s; }
-@keyframes brand-pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.8); opacity: 0.7; } }
-.brand-text { display: flex; flex-direction: column; line-height: 1; }
-.brand-name { font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 3px; color: var(--ink); }
-.brand-tag { font-size: 0.65rem; color: var(--ink-dim); margin-top: 0.3rem; letter-spacing: 1px; }
-.nav-links { display: flex; gap: 2rem; list-style: none; }
-.nav-link {
-  font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 2px;
-  position: relative; padding: 0.4rem 0; transition: color 0.25s var(--ease-smooth);
-  cursor: pointer;
-}
-.nav-link::after {
-  content: ''; position: absolute; bottom: -2px; left: 0;
-  width: 0%; height: 2px; background: var(--accent); transition: width 0.35s var(--ease-smooth);
-}
-.nav-link:hover { color: var(--accent); }
-.nav-link:hover::after { width: 100%; }
-.nav-cta { background: var(--c-u); padding: 0.5rem 1rem; border-radius: 4px; color: #fff !important; transition: all 0.3s var(--ease-smooth); }
-.nav-cta:hover { background: var(--c-a); box-shadow: 0 0 18px var(--c-a); }
-.nav-cta::after { display: none; }
-@media (max-width: 720px) { .brand-tag { display: none; } .nav-links { gap: 1rem; } }
+    .orb3 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, #ff3b4c, transparent);
+      top: 50%;
+      left: 10%;
+      animation-delay: 10s;
+    }
 
-/* HERO */
-.hero {
-  position: relative; min-height: 100vh;
-  display: flex; align-items: center;
-  overflow: hidden;
-  background: radial-gradient(ellipse at 75% 50%, var(--bg-2) 0%, var(--bg-0) 70%);
-}
-.hero-backdrop {
-  position: absolute; top: -6vh; right: -6vw; bottom: -6vh;
-  width: 62%; z-index: 0; pointer-events: none;
-  transform-origin: center right;
-  will-change: transform, opacity;
-  mask-image: radial-gradient(ellipse at center, #000 55%, transparent 85%);
-  -webkit-mask-image: radial-gradient(ellipse at center, #000 55%, transparent 85%);
-}
-#three-dna { width: 100%; height: 100%; display: block; }
-.hero-content {
-  position: relative; z-index: 2; text-align: left;
-  max-width: 620px; padding: 0 2rem 0 6rem; margin-right: auto;
-}
-@media (max-width: 900px) {
-  .hero { justify-content: center; text-align: center; }
-  .hero-backdrop { width: 100%; right: 0; opacity: 0.28; }
-  .hero-content { padding: 0 2rem; text-align: center; margin: 0 auto; max-width: 720px; }
-}
-.hero-kicker {
-  font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 6px;
-  color: var(--accent); margin-bottom: 1.5rem;
-  opacity: 0; animation: fade-up 1s var(--ease-smooth) 0.2s forwards;
-}
-.hero-title {
-  font-family: var(--f-display); font-size: clamp(1.6rem, 5vw, 3.4rem);
-  letter-spacing: 6px; margin-bottom: 2rem;
-  display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 0.6em;
-}
-@media (max-width: 900px) { .hero-title { justify-content: center; } .hero-cta { justify-content: center; } }
-.title-word {
-  display: inline-block; opacity: 0; transform: translateY(40px);
-  animation: title-in 0.9s var(--ease-smooth) forwards;
-  text-shadow: 0 0 20px currentColor; cursor: pointer;
-}
-.title-word:nth-child(1) { color: var(--c-a); animation-delay: 0.3s; }
-.title-word:nth-child(2) { color: var(--ink); animation-delay: 0.5s; }
-.title-word:nth-child(3) { color: var(--c-t); animation-delay: 0.7s; }
-.title-word:nth-child(4) { color: var(--c-c); animation-delay: 0.9s; }
-.title-word:nth-child(5) { color: var(--c-g); animation-delay: 1.1s; }
-@keyframes title-in {
-  0% { opacity: 0; transform: translateY(40px) rotateX(-60deg); }
-  100% { opacity: 1; transform: translateY(0) rotateX(0); }
-}
-.hero-subtitle {
-  max-width: 640px; margin: 0 0 3rem 0; font-size: 1.15rem; color: var(--ink-dim);
-  opacity: 0; transform: translateY(20px); animation: fade-up 1s var(--ease-smooth) 1.4s forwards;
-}
-@keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-.hero-cta {
-  display: flex; gap: 1.2rem; justify-content: flex-start; flex-wrap: wrap;
-  opacity: 0; transform: translateY(20px); animation: fade-up 1s var(--ease-smooth) 1.7s forwards;
-}
-.scroll-hint {
-  position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
-  font-family: var(--f-display); font-size: 0.5rem; letter-spacing: 3px;
-  color: var(--ink-dim); display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
-  opacity: 0; animation: fade-up 1s var(--ease-smooth) 2s forwards;
-}
-.scroll-hint span { display: block; width: 2px; height: 40px; background: linear-gradient(to bottom, transparent, var(--accent)); animation: scroll-line 1.8s ease-in-out infinite; }
-@keyframes scroll-line { 0%,100% { transform: scaleY(0.3); opacity: 0.3; } 50% { transform: scaleY(1); opacity: 1; } }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      33% { transform: translate(30px, -30px); }
+      66% { transform: translate(-20px, 20px); }
+    }
 
-/* BUTTONS */
-.btn {
-  --btn-fill: var(--ink);
-  --btn-text: var(--ink);
-  --btn-text-hover: var(--bg-0);
-  display: inline-block; font-family: var(--f-display); font-size: 0.7rem;
-  letter-spacing: 3px; padding: 1rem 2rem; border: 2px solid var(--btn-fill);
-  border-radius: 4px; cursor: pointer; background: transparent; color: var(--btn-text);
-  transition: color 0.3s var(--ease-smooth), transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth);
-  text-decoration: none; position: relative; overflow: hidden;
-  z-index: 0;
-}
-.btn::before {
-  content: ''; position: absolute; top: 0; left: -100%;
-  width: 100%; height: 100%; background: var(--btn-fill);
-  transition: left 0.45s var(--ease-smooth); z-index: -1;
-}
-.btn:hover::before { left: 0; }
-.btn:hover { color: var(--btn-text-hover); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,255,255,0.15); }
-.btn-primary { --btn-fill: var(--c-u); --btn-text: #fff; --btn-text-hover: #fff; }
-.btn-primary:hover { box-shadow: 0 10px 30px var(--c-u); }
-.btn-ghost { --btn-fill: var(--accent); --btn-text: var(--accent); --btn-text-hover: var(--bg-0); }
-.btn-ghost:hover { box-shadow: 0 10px 30px var(--accent); }
-.btn-big { padding: 1.3rem 2.6rem; font-size: 0.8rem; }
-.btn-small { padding: 0.6rem 1rem; font-size: 0.5rem; }
+    .container {
+      text-align: center;
+      z-index: 1;
+      padding: 2rem;
+      max-width: 600px;
+    }
 
-/* SECTIONS */
-.section { position: relative; padding: 8rem 0; overflow: hidden; }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 2; }
-.section-kicker { font-family: var(--f-display); font-size: 0.6rem; letter-spacing: 4px; color: var(--accent); display: block; margin-bottom: 1.5rem; }
-.section-heading { font-size: clamp(1.8rem, 3.8vw, 3rem); font-weight: 700; line-height: 1.15; margin-bottom: 2rem; max-width: 900px; }
-.section-heading em { font-style: italic; background: linear-gradient(90deg, var(--c-a), var(--c-u)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.section-title { font-size: clamp(1.6rem, 3.5vw, 2.6rem); margin-bottom: 3rem; max-width: 800px; }
-.section-lead { font-size: 1.15rem; color: var(--ink-dim); max-width: 780px; margin-bottom: 2.5rem; line-height: 1.7; }
-.split { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
-.split.reverse .split-text { order: 2; }
-@media (max-width: 860px) { .split { grid-template-columns: 1fr; } .split.reverse .split-text { order: 0; } }
-.split-text p { margin-bottom: 1.2rem; font-size: 1.05rem; }
-.split-text strong { color: var(--accent); }
+    h1 {
+      font-size: 4rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #7cf9ff 0%, #b44dff 50%, #ff3b4c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1.5rem;
+      letter-spacing: 2px;
+      text-shadow: 0 0 30px rgba(124, 249, 255, 0.2);
+      animation: glow-pulse 3s ease-in-out infinite;
+    }
 
-/* REVEAL */
-.reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.9s var(--ease-smooth), transform 0.9s var(--ease-smooth); }
-.reveal.visible { opacity: 1; transform: translateY(0); }
+    @keyframes glow-pulse {
+      0%, 100% { filter: drop-shadow(0 0 20px rgba(124, 249, 255, 0.3)); }
+      50% { filter: drop-shadow(0 0 40px rgba(180, 77, 255, 0.5)); }
+    }
 
-/* STATS */
-.section-stats { background: linear-gradient(180deg, var(--bg-0), var(--bg-1)); padding: 6rem 0; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; text-align: center; }
-.stat { padding: 2rem 1rem; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(255,255,255,0.02); transition: transform 0.5s var(--ease-smooth), border-color 0.5s var(--ease-smooth), box-shadow 0.5s var(--ease-smooth); }
-.stat:hover { transform: translateY(-6px); border-color: var(--accent); box-shadow: 0 10px 40px rgba(124, 249, 255, 0.15); }
-.stat-num { font-family: var(--f-display); font-size: 2rem; color: var(--c-g); margin-bottom: 0.6rem; display: inline-block; text-shadow: 0 0 20px var(--c-g); }
-.stat-label { color: var(--ink-dim); font-size: 0.95rem; line-height: 1.5; }
+    .divider {
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #7cf9ff, transparent);
+      margin: 2rem 0;
+      opacity: 0.6;
+    }
 
-/* LETTER GRID */
-.letter-grid-section { padding: 6rem 0 8rem; background: linear-gradient(180deg, var(--bg-1), var(--bg-0)); text-align: center; }
-.letter-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; margin: 3rem auto; max-width: 880px; perspective: 800px; }
-.letter-cell {
-  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-  font-family: var(--f-display); font-size: 0.85rem; border-radius: 4px;
-  transform-style: preserve-3d; opacity: 0; animation: letter-drop 0.6s var(--ease-smooth) forwards;
-  cursor: pointer; transition: transform 0.3s var(--ease-spring), box-shadow 0.3s var(--ease-smooth);
-  user-select: none; position: relative;
-}
-.letter-cell:hover { transform: translateZ(30px) translateY(-4px) scale(1.15); z-index: 2; }
-.letter-cell.A { background: var(--c-a); color: #fff; box-shadow: 0 0 10px var(--c-a); }
-.letter-cell.T { background: var(--c-t); color: #fff; box-shadow: 0 0 10px var(--c-t); }
-.letter-cell.C { background: var(--c-c); color: #000; box-shadow: 0 0 10px var(--c-c); }
-.letter-cell.G { background: var(--c-g); color: #000; box-shadow: 0 0 10px var(--c-g); }
-.letter-cell.U { background: var(--c-u); color: #fff; box-shadow: 0 0 10px var(--c-u); }
-.letter-cell.glitching { animation: letter-jitter 0.04s linear infinite; }
-@keyframes letter-drop { 0% { opacity: 0; transform: translateY(-30px) rotateX(-90deg); } 100% { opacity: 1; transform: translateY(0) rotateX(0); } }
-@keyframes letter-jitter {
-  0% { transform: translate(-1px, 0) scale(1.1); }
-  25% { transform: translate(1px, -1px) scale(1.15); }
-  50% { transform: translate(-1px, 1px) scale(1.1); }
-  75% { transform: translate(1px, 0) scale(1.15); }
-  100% { transform: translate(0, 0) scale(1.1); }
-}
-.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem; margin-top: 3rem; font-size: 0.95rem; color: var(--ink-dim); }
-.legend-item { display: flex; align-items: center; gap: 0.5rem; }
-.swatch { width: 20px; height: 20px; border-radius: 4px; display: inline-block; }
-.swatch-A { background: var(--c-a); }  .swatch-T { background: var(--c-t); }
-.swatch-C { background: var(--c-c); }  .swatch-G { background: var(--c-g); }
-.swatch-U { background: var(--c-u); }
+    .credit {
+      font-size: 1.2rem;
+      color: #ecefff;
+      margin-top: 2rem;
+    }
 
-/* DOGMA */
-.section-intro { background: linear-gradient(180deg, var(--bg-0), var(--bg-0)); }
-.dogma-flow { display: flex; align-items: center; justify-content: center; gap: 0.8rem; flex-wrap: wrap; }
-.dogma-node { width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 2px; color: #fff; animation: dogma-pulse 2.5s ease-in-out infinite; box-shadow: 0 0 30px currentColor; }
-.dogma-dna { background: var(--c-a); animation-delay: 0s; }
-.dogma-rna { background: var(--c-u); animation-delay: 0.4s; }
-.dogma-protein { background: var(--c-c); animation-delay: 0.8s; color: #000; }
-.dogma-arrow { width: 80px; height: 24px; fill: var(--accent); stroke: var(--accent); }
-.dogma-arrow path { stroke-dasharray: 200; stroke-dashoffset: 200; animation: dash-in 1.4s ease forwards; }
-@keyframes dash-in { to { stroke-dashoffset: 0; } }
-@keyframes dogma-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+    .github-link {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, #7cf9ff, #b44dff);
+      color: #0a0e27;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+      border: 2px solid transparent;
+    }
 
-/* MUTATIONS */
-.section-mutations { background: linear-gradient(180deg, var(--bg-0), var(--bg-0)); }
-.mut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 3rem; }
-.mut-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 1.6rem; transition: all 0.45s var(--ease-smooth); position: relative; overflow: hidden; }
-.mut-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, var(--c-a), transparent); transition: left 0.7s var(--ease-smooth); }
-.mut-card:hover::before { left: 100%; }
-.mut-card:hover { transform: translateY(-6px); border-color: var(--c-a); box-shadow: 0 12px 30px rgba(255,59,76,0.15); }
-.mut-card h3 { font-family: var(--f-display); font-size: 0.75rem; letter-spacing: 2px; color: var(--c-a); margin-bottom: 0.8rem; }
-.mut-card p { font-size: 0.95rem; color: var(--ink-dim); line-height: 1.6; }
+    .github-link::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #ff3b4c, #ffd23b);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: -1;
+    }
 
-/* HEALTH */
-.section-health { background: linear-gradient(180deg, var(--bg-0), #0f1030); }
-.health-visual { display: grid; grid-template-columns: 1fr 1.5fr; gap: 3rem; align-items: center; margin-top: 3rem; }
-@media (max-width: 720px) { .health-visual { grid-template-columns: 1fr; } }
-.cell-org { position: relative; aspect-ratio: 1; max-width: 340px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle at 30% 30%, rgba(124, 249, 255, 0.3), rgba(50, 119, 255, 0.05) 70%); border: 2px solid rgba(124, 249, 255, 0.3); animation: cell-breathe 3s ease-in-out infinite; overflow: hidden; transition: border-color 0.6s var(--ease-smooth), animation-duration 0.6s var(--ease-smooth); }
-@keyframes cell-breathe { 0%,100% { transform: scale(1); box-shadow: 0 0 40px rgba(124, 249, 255, 0.2); } 50% { transform: scale(1.04); box-shadow: 0 0 80px rgba(124, 249, 255, 0.4); } }
-.cell-nucleus { position: absolute; top: 50%; left: 50%; width: 40%; height: 40%; border-radius: 50%; background: radial-gradient(circle, var(--c-u), var(--c-a)); transform: translate(-50%, -50%); animation: nucleus-spin 8s linear infinite; box-shadow: 0 0 30px var(--c-u); }
-@keyframes nucleus-spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-.health-bar-wrap { display: flex; flex-direction: column; gap: 1rem; }
-.health-bar { width: 100%; height: 32px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.15); border-radius: 6px; overflow: hidden; }
-.health-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--c-c), var(--c-g), var(--c-a)); transition: width 0.6s var(--ease-smooth); box-shadow: 0 0 12px rgba(255,255,255,0.3); }
-.health-bar-label { font-family: var(--f-display); font-size: 0.7rem; letter-spacing: 2px; }
-.health-buttons { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .github-link:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(124, 249, 255, 0.3);
+      border-color: #7cf9ff;
+    }
 
-/* PLAY */
-.section-play { background: radial-gradient(ellipse at center, #1a0f3f, var(--bg-0) 80%); text-align: center; }
-.play-card { margin-top: 3rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 3rem; box-shadow: 0 40px 80px rgba(0,0,0,0.5); }
-.play-card-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; text-align: left; }
-@media (max-width: 860px) { .play-card-inner { grid-template-columns: 1fr; } }
-.gamepad { display: flex; gap: 2rem; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
-.dpad { position: relative; width: 120px; height: 120px; display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
-.dpad-btn { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); color: var(--accent); font-family: var(--f-display); font-size: 0.7rem; transition: all 0.2s var(--ease-smooth); cursor: pointer; }
-.dpad-btn:hover { background: var(--accent); color: var(--bg-0); }
-.dpad-btn.up    { grid-column: 2; grid-row: 1; }
-.dpad-btn.down  { grid-column: 2; grid-row: 3; }
-.dpad-btn.left  { grid-column: 1; grid-row: 2; }
-.dpad-btn.right { grid-column: 3; grid-row: 2; }
-.dpad-btn.center { grid-column: 2; grid-row: 2; background: rgba(255,255,255,0.02); cursor: default; }
-.ab { display: flex; flex-direction: column; gap: 0.7rem; }
-.btn-a, .btn-b { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 0.9rem; color: #fff; cursor: pointer; transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-smooth); }
-.btn-a { background: var(--c-a); box-shadow: 0 0 12px var(--c-a); }
-.btn-b { background: var(--c-t); box-shadow: 0 0 12px var(--c-t); }
-.btn-a:hover, .btn-b:hover { transform: scale(1.12); }
-.controls-list { list-style: none; font-size: 0.95rem; color: var(--ink-dim); }
-.controls-list li { padding: 0.3rem 0; }
-.controls-list strong { color: var(--accent); font-family: var(--f-display); font-size: 0.65rem; margin-right: 0.5rem; }
-.play-links { display: flex; flex-direction: column; gap: 1rem; align-items: flex-start; }
-.caption { margin-top: 1rem; font-size: 0.9rem; color: var(--ink-dim); text-align: center; font-style: italic; }
+    .github-link:hover::before {
+      opacity: 1;
+    }
 
-/* FOOTER */
-.footer { background: var(--bg-0); padding: 4rem 0 3rem; text-align: center; color: var(--ink-dim); border-top: 1px solid rgba(255,255,255,0.08); }
-.footer-dna { position: relative; width: 80px; height: 140px; margin: 0 auto 2rem; transform-style: preserve-3d; animation: footer-spin 4s linear infinite; }
-.footer-strand { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: linear-gradient(var(--c-a), var(--c-t), var(--c-c), var(--c-g), var(--c-u)); transform-origin: top center; }
-.footer-strand:nth-child(1) { transform: translateX(-50%) rotateY(0deg); }
-.footer-strand:nth-child(2) { transform: translateX(-50%) rotateY(90deg); }
-@keyframes footer-spin { 0% { transform: rotateX(60deg) rotateY(0deg); } 100% { transform: rotateX(60deg) rotateY(360deg); } }
-.footer-brand { font-family: var(--f-display); font-size: 1rem; letter-spacing: 6px; color: var(--accent); margin-bottom: 0.5rem; }
-.footer-small { font-size: 0.85rem; opacity: 0.6; margin-top: 0.6rem; }
-</style>
+    .scan-line {
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15) 0px,
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+  </style>
 </head>
 <body>
-
-<!-- CURSOR SPOT -->
-<div class="cursor-spot" id="cursor-spot"></div>
-
-<!-- LOADER -->
-<div id="loader" class="loader">
-  <div class="loader-helix">
-    <div class="loader-strand"></div>
-    <div class="loader-strand"></div>
+  <div class="bg-animated">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
   </div>
-  <div class="loader-brand">CELL STUDIO</div>
-  <div class="loader-sub">Decoding life...</div>
-</div>
 
-<!-- SCROLL PROGRESS -->
-<div class="scroll-progress" id="scroll-progress"></div>
-
-<!-- PARTICLES -->
-<div class="particles" id="particles"></div>
-
-<!-- CRT OVERLAY -->
-<div class="crt-overlay" aria-hidden="true">
-  <div class="crt-flicker"></div>
-</div>
-
-<!-- NAVBAR -->
-<nav class="navbar">
-  <a href="#top" class="brand">
-    <div class="brand-mark">
-      <div class="brand-dot"></div>
-      <div class="brand-dot"></div>
-      <div class="brand-dot"></div>
-      <div class="brand-dot"></div>
-    </div>
-    <div class="brand-text">
-      <span class="brand-name">CELL STUDIO</span>
-      <span class="brand-tag">Interactive Biology</span>
-    </div>
-  </a>
-  <ul class="nav-links">
-    <li><a href="#why" class="nav-link">Why</a></li>
-    <li><a href="#mutations" class="nav-link">Die</a></li>
-    <li><a href="https://cellstudiogame.classinteractives.co.uk/" target="_blank" rel="noopener" class="nav-link nav-cta">Play</a></li>
-  </ul>
-</nav>
-
-<!-- HERO -->
-<header class="hero" id="top">
-  <div class="hero-backdrop">
-    <div id="three-dna"></div>
-  </div>
-  <div class="hero-content">
-    <div class="hero-kicker">CELL STUDIO PRESENTS</div>
-    <h1 class="hero-title">
-      <span class="title-word" data-text="DNA">DNA</span>
-      <span class="title-word title-colon">:</span>
-      <span class="title-word" data-text="CODE">CODE</span>
-      <span class="title-word" data-text="OF">OF</span>
-      <span class="title-word" data-text="LIFE">LIFE</span>
-    </h1>
-    <p class="hero-subtitle">A pixel-art biology game about the central dogma. Catch bases, ride the polymerase, run the maze — all on a single Cell Health bar that makes every mistake count.</p>
-    <div class="hero-cta">
-      <a href="https://cellstudiogame.classinteractives.co.uk/" target="_blank" rel="noopener" class="btn btn-primary">PLAY NOW</a>
-      <a href="#why" class="btn btn-ghost">WHY YOU'LL LOVE IT</a>
-    </div>
-    <div class="scroll-hint"><span></span>SCROLL</div>
-  </div>
-</header>
-
-<!-- STATS -->
-<section class="section section-stats">
   <div class="container">
-    <div class="stats-grid">
-      <div class="stat reveal">
-        <div class="stat-num" data-count="3">0</div>
-        <div class="stat-label">Playable levels — pairing, transcription, mRNA maze</div>
-      </div>
-      <div class="stat reveal">
-        <div class="stat-num" data-count="5">0</div>
-        <div class="stat-label">Colors that link every letter to its nucleotide</div>
-      </div>
-      <div class="stat reveal">
-        <div class="stat-num" data-count="1">0</div>
-        <div class="stat-label">Shared Cell Health bar — one chain, one life</div>
-      </div>
-      <div class="stat reveal">
-        <div class="stat-num" data-count="0">0</div>
-        <div class="stat-label">Cost — free, browser-based, play right now</div>
-      </div>
-    </div>
+    <h1>under construction</h1>
+    <div class="divider"></div>
+    <p class="credit">
+      github from <strong>Leon Fernandes</strong><br>
+      <a href="https://github.com/sheepishlyroyal" class="github-link">
+        → sheepishlyroyal
+      </a>
+    </p>
   </div>
-</section>
 
-<!-- LETTER GRID -->
-
-<!-- WHY -->
-<section class="section section-intro" id="why">
-  <div class="container">
-    <div class="split">
-      <div class="split-text reveal">
-        <span class="section-kicker">01 · WHY YOU'LL LOVE IT</span>
-        <h2 class="section-heading">Three <em>tight</em> mini-games. One living cell to keep alive.</h2>
-        <p>Most biology explainers are read-only. This one isn't. Every mechanic is a biological process you're physically operating — catch the base, ride the polymerase, dodge the RNase — and every mistake shows up as damage on a shared Cell Health bar.</p>
-        <p><strong>Pixel-art animation.</strong> Hydrogen bonds zip closed on correct pairs. The helix glitches red on mistakes. Enzymes wobble as they chase. ATP packets spin.</p>
-        <p><strong>Runs in a browser.</strong> Free, no account, no install. Open the link and play.</p>
-      </div>
-      <div class="dogma-flow reveal">
-        <div class="dogma-node dogma-dna"><span>DNA</span></div>
-        <svg class="dogma-arrow" viewBox="0 0 200 40"><path d="M5 20 L 180 20" stroke-width="3"/><polygon points="180,10 195,20 180,30"/></svg>
-        <div class="dogma-node dogma-rna"><span>RNA</span></div>
-        <svg class="dogma-arrow" viewBox="0 0 200 40"><path d="M5 20 L 180 20" stroke-width="3"/><polygon points="180,10 195,20 180,30"/></svg>
-        <div class="dogma-node dogma-protein"><span>PROTEIN</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- MUTATIONS -->
-<section class="section section-mutations" id="mutations">
-  <div class="container">
-    <span class="section-kicker reveal">02 · SIX WAYS YOUR CELL DIES</span>
-    <h2 class="section-heading reveal">Losing is never just <em>"game over."</em></h2>
-    <p class="section-lead reveal">Every mistake is themed. Every death has its own on-screen event and explanation. The Cell Health bar isn't cosmetic — it's the connective tissue that makes three tiny games feel like one living thing.</p>
-    <div class="mut-grid">
-      <div class="mut-card reveal">
-        <h3>MUTATION OVERLOAD</h3>
-        <p>Pair wrong bases and the strand goes unstable. A "DNA DAMAGE DETECTED" splash fires. Big Cell Health hit. The helix visibly glitches.</p>
-      </div>
-      <div class="mut-card reveal">
-        <h3>PROMOTER MISS</h3>
-        <p>Miss the TATA box too many times and transcription shuts down. "Transcription failed" — crushing.</p>
-      </div>
-      <div class="mut-card reveal">
-        <h3>ENZYME STRIKE</h3>
-        <p>Degradation enzymes chase you. Take a hit and a fire-effect explosion blasts the enzyme while you lose 20 Cell Health.</p>
-      </div>
-      <div class="mut-card reveal">
-        <h3>TIMER DEGRADATION</h3>
-        <p>Every level has a soft clock. Linger and the mRNA degrades on its own. The timer is an enemy.</p>
-      </div>
-      <div class="mut-card reveal">
-        <h3>RIBOSOME MISS</h3>
-        <p>Get lost in the maze and let the timer hit zero. The message is degraded for good — no delivery, no heal.</p>
-      </div>
-      <div class="mut-card reveal">
-        <h3>CELL DEATH</h3>
-        <p>Hit zero on Cell Health at any point and it's over. Background turns blood red. Dissolve effect wipes the sprites.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- HEALTH -->
-<section class="section section-health">
-  <div class="container">
-    <span class="section-kicker reveal">03 · ONE HEALTH BAR · THREE LEVELS</span>
-    <h2 class="section-heading reveal">Every mistake in every level hits the <em>same</em> bar.</h2>
-    <div class="health-visual reveal">
-      <div class="cell-org">
-        <div class="cell-nucleus"></div>
-      </div>
-      <div class="health-bar-wrap">
-        <div class="health-bar" id="demo-health"><div class="health-bar-fill"></div></div>
-        <div class="health-bar-label">CELL HEALTH: <span id="health-num">100</span>%</div>
-        <div class="health-buttons">
-          <button id="damage-btn" class="btn btn-small">TAKE A HIT (-15)</button>
-          <button id="heal-btn" class="btn btn-small">HEAL (+10)</button>
-        </div>
-      </div>
-    </div>
-    <p class="section-lead reveal" style="margin-top: 2rem;">Try the demo — tap the buttons, watch the bar move. Clear a level and you heal. Botch a pair, miss a promoter, bump an enzyme — you bleed. Stack mistakes across the whole run and the cell flatlines. <strong>That's why the game feels like a game, not a worksheet.</strong></p>
-  </div>
-</section>
-
-<!-- PLAY -->
-<section class="section section-play" id="play">
-  <div class="container">
-    <h2 class="section-heading reveal">Ready to play?</h2>
-    <p class="section-lead reveal">The game runs in your browser. No account, no install. One click, and you're in the cell.</p>
-    <div class="play-card reveal">
-      <div class="play-card-inner">
-        <div class="play-controls">
-          <div class="gamepad">
-            <div class="dpad">
-              <div class="dpad-btn up">▲</div>
-              <div class="dpad-btn left">◀</div>
-              <div class="dpad-btn center"></div>
-              <div class="dpad-btn right">▶</div>
-              <div class="dpad-btn down">▼</div>
-            </div>
-            <div class="ab">
-              <div class="btn-a">A</div>
-              <div class="btn-b">B</div>
-            </div>
-          </div>
-          <ul class="controls-list">
-            <li><strong>▲ / ▼</strong> switch rails (L1) / move mRNA (L3)</li>
-            <li><strong>◀ / ▶</strong> steer polymerase (L2) / move mRNA (L3)</li>
-            <li><strong>A</strong> snap a base / fire transcription</li>
-            <li><strong>B</strong> secondary / menu confirm</li>
-          </ul>
-        </div>
-        <div class="play-links">
-          <a class="btn btn-primary btn-big" href="https://cellstudiogame.classinteractives.co.uk/" target="_blank" rel="noopener">LAUNCH GAME ↗</a>
-          <p style="font-size:0.9rem; color: var(--ink-dim); margin-top: 0.5rem;">Opens the game in a new tab.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer-dna">
-      <div class="footer-strand"></div>
-      <div class="footer-strand"></div>
-    </div>
-    <div class="footer-brand">CELL STUDIO</div>
-    <p>Pixel-art biology for anyone with a keyboard and a curiosity streak.</p>
-    <p class="footer-small">Three levels · One cell · Play it, don't read about it.</p>
-  </div>
-</footer>
-
-<script>
-/* ============================================================
-   CELL STUDIO — INTERACTIVITY (no audio)
-   ============================================================ */
-
-/* 1. LOADER */
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    document.getElementById('loader').classList.add('done');
-  }, 1200);
-});
-
-/* 2. SCROLL PROGRESS + HERO BACKDROP — throttled with rAF */
-(function smoothScroll() {
-  const progress = document.getElementById('scroll-progress');
-  const heroBackdrop = document.querySelector('.hero-backdrop');
-  let ticking = false;
-  function update() {
-    const h = document.documentElement;
-    progress.style.width = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100 + '%';
-    if (heroBackdrop) {
-      const vh = window.innerHeight || 800;
-      const p = Math.min(1, Math.max(0, h.scrollTop / vh));
-      const scale = 1 + p * 0.45;
-      const opacity = Math.max(0, 1 - Math.pow(p, 1.3));
-      heroBackdrop.style.transform = `scale(${scale})`;
-      heroBackdrop.style.opacity = opacity;
-    }
-    ticking = false;
-  }
-  window.addEventListener('scroll', () => {
-    if (!ticking) { requestAnimationFrame(update); ticking = true; }
-  }, { passive: true });
-})();
-
-/* 3. SMOOTH CURSOR SPOT — lerp */
-(function cursorLerp() {
-  const spot = document.getElementById('cursor-spot');
-  let tx = window.innerWidth / 2, ty = window.innerHeight / 2;
-  let x = tx, y = ty;
-  document.addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; });
-  function loop() {
-    x += (tx - x) * 0.22;
-    y += (ty - y) * 0.22;
-    spot.style.left = x + 'px';
-    spot.style.top  = y + 'px';
-    requestAnimationFrame(loop);
-  }
-  loop();
-  document.querySelectorAll('a, button, .letter-cell, .dpad-btn, .btn-a, .btn-b, .mut-card, .stat, .title-word').forEach(el => {
-    el.addEventListener('mouseenter', () => spot.classList.add('active'));
-    el.addEventListener('mouseleave', () => spot.classList.remove('active'));
-  });
-})();
-
-/* 4. PARTICLES */
-(function particles() {
-  const particlesRoot = document.getElementById('particles');
-  const palette = { A: '#ff3b4c', T: '#3277ff', C: '#30d68a', G: '#ffd23b', U: '#b44dff' };
-  function spawnParticle() {
-    const letters = Object.keys(palette);
-    const l = letters[Math.floor(Math.random() * letters.length)];
-    const el = document.createElement('div');
-    el.className = 'particle';
-    el.textContent = l;
-    el.style.color = palette[l];
-    el.style.left = Math.random() * 100 + '%';
-    el.style.fontSize = (10 + Math.random() * 18) + 'px';
-    el.style.animationDuration = (14 + Math.random() * 20) + 's';
-    el.style.animationDelay = (-Math.random() * 20) + 's';
-    particlesRoot.appendChild(el);
-    setTimeout(() => el.remove(), 35000);
-  }
-  for (let i = 0; i < 35; i++) spawnParticle();
-  setInterval(spawnParticle, 1200);
-})();
-
-/* 5. THREE.JS 3D DNA HERO */
-(function initThreeDNA() {
-  const mount = document.getElementById('three-dna');
-  if (!mount || typeof THREE === 'undefined') return;
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x05060d, 40, 140);
-  const camera = new THREE.PerspectiveCamera(55, mount.clientWidth / mount.clientHeight, 0.1, 500);
-  camera.position.set(0, 0, 70);
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(mount.clientWidth, mount.clientHeight);
-  renderer.setClearColor(0x000000, 0);
-  mount.appendChild(renderer.domElement);
-  scene.add(new THREE.AmbientLight(0x8899ff, 0.6));
-  const dir1 = new THREE.DirectionalLight(0xffffff, 0.8); dir1.position.set(20, 20, 30); scene.add(dir1);
-  const pl1 = new THREE.PointLight(0x7cf9ff, 1.2, 120); pl1.position.set(-20, 10, 10); scene.add(pl1);
-  const pl2 = new THREE.PointLight(0xb44dff, 1.0, 120); pl2.position.set(20, -20, 10); scene.add(pl2);
-  const dna = new THREE.Group();
-  scene.add(dna);
-  const PAIR_COUNT = 110, HELIX_RADIUS = 9, PAIR_SPACING = 1.6, TWIST = Math.PI / 5;
-  const totalHeight = PAIR_COUNT * PAIR_SPACING;
-  const colors = { A: 0xff3b4c, T: 0x3277ff, C: 0x30d68a, G: 0xffd23b };
-  const pairs = [['A','T'], ['G','C'], ['T','A'], ['C','G'], ['A','T'], ['T','A'], ['G','C'], ['C','G']];
-  const sphereGeo = new THREE.SphereGeometry(0.9, 20, 16);
-  const backboneGeo = new THREE.SphereGeometry(0.35, 12, 10);
-  const rungGeo = new THREE.CylinderGeometry(0.1, 0.1, HELIX_RADIUS * 2 - 1.8, 8);
-  rungGeo.rotateZ(Math.PI / 2);
-  for (let i = 0; i < PAIR_COUNT; i++) {
-    const y = -totalHeight / 2 + i * PAIR_SPACING;
-    const angle = i * TWIST;
-    const [b1, b2] = pairs[i % pairs.length];
-    const rung = new THREE.Mesh(rungGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, emissive: 0xffffff, emissiveIntensity: 0.1 }));
-    rung.position.set(0, y, 0); rung.rotation.y = angle;
-    dna.add(rung);
-    const mat1 = new THREE.MeshStandardMaterial({ color: colors[b1], emissive: colors[b1], emissiveIntensity: 0.6, roughness: 0.35, metalness: 0.1 });
-    const base1 = new THREE.Mesh(sphereGeo, mat1);
-    base1.position.set(Math.cos(angle) * HELIX_RADIUS, y, Math.sin(angle) * HELIX_RADIUS);
-    dna.add(base1);
-    const mat2 = new THREE.MeshStandardMaterial({ color: colors[b2], emissive: colors[b2], emissiveIntensity: 0.6, roughness: 0.35, metalness: 0.1 });
-    const base2 = new THREE.Mesh(sphereGeo, mat2);
-    base2.position.set(-Math.cos(angle) * HELIX_RADIUS, y, -Math.sin(angle) * HELIX_RADIUS);
-    dna.add(base2);
-    if (i > 0) {
-      const prev = (i - 1) * TWIST;
-      const prevY = y - PAIR_SPACING;
-      for (let t = 0; t < 6; t++) {
-        const f = t / 6;
-        const a = prev + (angle - prev) * f;
-        const yy = prevY + PAIR_SPACING * f;
-        const m = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x444488, emissiveIntensity: 0.3, transparent: true, opacity: 0.5 });
-        const bead1 = new THREE.Mesh(backboneGeo, m);
-        bead1.position.set(Math.cos(a) * HELIX_RADIUS, yy, Math.sin(a) * HELIX_RADIUS);
-        dna.add(bead1);
-        const bead2 = new THREE.Mesh(backboneGeo, m);
-        bead2.position.set(-Math.cos(a) * HELIX_RADIUS, yy, -Math.sin(a) * HELIX_RADIUS);
-        dna.add(bead2);
-      }
-    }
-  }
-  const floaters = [];
-  for (let i = 0; i < 24; i++) {
-    const letters = Object.keys(colors);
-    const l = letters[Math.floor(Math.random() * letters.length)];
-    const mat = new THREE.MeshStandardMaterial({ color: colors[l], emissive: colors[l], emissiveIntensity: 0.8, transparent: true, opacity: 0.8 });
-    const s = new THREE.Mesh(new THREE.SphereGeometry(0.5 + Math.random() * 0.6, 12, 10), mat);
-    s.position.set((Math.random() - 0.5) * 80, (Math.random() - 0.5) * totalHeight, (Math.random() - 0.5) * 40 - 20);
-    s.userData = { vy: (Math.random() - 0.5) * 0.03, vx: (Math.random() - 0.5) * 0.02 };
-    scene.add(s); floaters.push(s);
-  }
-  window.addEventListener('resize', () => {
-    camera.aspect = mount.clientWidth / mount.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(mount.clientWidth, mount.clientHeight);
-  });
-  let mx = 0, my = 0, lastScroll = 0;
-  window.addEventListener('mousemove', e => {
-    mx = (e.clientX / window.innerWidth - 0.5) * 2;
-    my = (e.clientY / window.innerHeight - 0.5) * 2;
-  });
-  window.addEventListener('scroll', () => { lastScroll = window.scrollY; }, { passive: true });
-  const clock = new THREE.Clock();
-  let tgtRotZ = 0, tgtRotX = 0, rotZ = 0, rotX = 0;
-  function animate() {
-    const dt = clock.getDelta();
-    const t = clock.getElapsedTime();
-    dna.rotation.y += dt * 0.3;
-    dna.rotation.y += lastScroll * 0.00005;
-    dna.position.y = Math.sin(t * 0.6) * 0.6;
-    tgtRotZ = mx * 0.15; tgtRotX = my * 0.1;
-    rotZ += (tgtRotZ - rotZ) * 0.08;
-    rotX += (tgtRotX - rotX) * 0.08;
-    dna.rotation.z = rotZ;
-    dna.rotation.x = rotX;
-    floaters.forEach(f => {
-      f.position.y += f.userData.vy;
-      f.position.x += f.userData.vx;
-      if (f.position.y > totalHeight / 2) f.position.y = -totalHeight / 2;
-      if (f.position.y < -totalHeight / 2) f.position.y = totalHeight / 2;
-    });
-    renderer.render(scene, camera);
-    requestAnimationFrame(animate);
-  }
-  animate();
-})();
-
-/* 6. REVEAL + count-up trigger */
-const io = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      e.target.classList.add('visible');
-      if (e.target.classList.contains('stat')) startCount(e.target);
-    }
-  });
-}, { threshold: 0.15 });
-document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-
-/* 7. COUNT-UP */
-const counted = new WeakSet();
-function startCount(stat) {
-  if (counted.has(stat)) return;
-  counted.add(stat);
-  const numEl = stat.querySelector('.stat-num');
-  if (!numEl) return;
-  const target = parseInt(numEl.dataset.count, 10);
-  const duration = 1400;
-  const start = performance.now();
-  function tick(now) {
-    const p = Math.min(1, (now - start) / duration);
-    const eased = 1 - Math.pow(1 - p, 3);
-    numEl.textContent = Math.floor(eased * target).toString();
-    if (p < 1) requestAnimationFrame(tick);
-    else numEl.textContent = target.toString();
-  }
-  requestAnimationFrame(tick);
-}
-
-/* 8. NAVBAR */
-const navbar = document.querySelector('.navbar');
-window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 40), { passive: true });
-
-/* 9. LETTER GRID — all letters glitch on hover (no sound) */
-(function buildLetterGrid() {
-  const grid = document.getElementById('letter-grid');
-  const letters = ['A', 'T', 'C', 'G', 'U'];
-  const cols = 16, rows = 6;
-  function glitchCell(cell, origLetter) {
-    if (cell.dataset.glitching === '1') return;
-    cell.dataset.glitching = '1';
-    cell.classList.add('glitching');
-    let i = 0;
-    const iv = setInterval(() => {
-      cell.textContent = letters[Math.floor(Math.random() * letters.length)];
-      i++;
-      if (i > 8) {
-        clearInterval(iv);
-        cell.textContent = origLetter;
-        cell.classList.remove('glitching');
-        cell.dataset.glitching = '0';
-      }
-    }, 45);
-  }
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const letter = letters[Math.floor(Math.random() * letters.length)];
-      const cell = document.createElement('div');
-      cell.className = 'letter-cell ' + letter;
-      cell.textContent = letter;
-      cell.style.animationDelay = ((r * cols + c) * 0.015) + 's';
-      cell.addEventListener('mouseenter', () => { glitchCell(cell, letter); });
-      cell.addEventListener('click', () => { glitchCell(cell, letter); });
-      grid.appendChild(cell);
-    }
-  }
-})();
-
-/* 10. HEALTH DEMO (no sound) */
-(function healthDemo() {
-  let health = 100;
-  const fill = document.querySelector('.health-bar-fill');
-  const num = document.getElementById('health-num');
-  const dmg = document.getElementById('damage-btn');
-  const heal = document.getElementById('heal-btn');
-  const cell = document.querySelector('.cell-org');
-  function update() {
-    fill.style.width = health + '%';
-    num.textContent = health;
-    if (health < 30) { cell.style.animationDuration = '0.8s'; cell.style.borderColor = 'var(--c-a)'; }
-    else { cell.style.animationDuration = '3s'; cell.style.borderColor = 'rgba(124, 249, 255, 0.3)'; }
-  }
-  dmg.addEventListener('click', () => {
-    health = Math.max(0, health - 15); update();
-    cell.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1) translateX(-6px)' }, { transform: 'scale(1) translateX(6px)' }, { transform: 'scale(1)' }], { duration: 400 });
-    if (health <= 0) { setTimeout(() => { health = 100; update(); }, 1000); }
-  });
-  heal.addEventListener('click', () => { health = Math.min(100, health + 10); update(); });
-})();
-
-/* 11. TITLE-WORD GLITCH (no sound) */
-document.querySelectorAll('.title-word').forEach(w => {
-  w.addEventListener('mouseenter', () => {
-    const orig = w.textContent;
-    const chars = 'ATCGU';
-    let i = 0;
-    const iv = setInterval(() => {
-      w.textContent = orig.split('').map(c => Math.random() < 0.5 ? chars[Math.floor(Math.random() * 5)] : c).join('');
-      i++;
-      if (i > 6) { clearInterval(iv); w.textContent = orig; }
-    }, 40);
-  });
-});
-
-console.log('%cCELL STUDIO — DNA: Code of Life', 'color:#7cf9ff;font-weight:bold;font-size:14px;letter-spacing:4px;');
-</script>
+  <div class="scan-line"></div>
 </body>
 </html>
